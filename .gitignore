@@ -11,3 +11,4 @@ build/
 data/
 catalog/catalog.json
 .pytest_cache/
+go-ingest/econscope-ingest
