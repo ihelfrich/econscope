@@ -1,0 +1,927 @@
+# ============================================================================
+# ECONSCOPE — Source Registry
+# ============================================================================
+# This file is the single source of truth for all data sources, their rate
+# limits, API details, and RSS/feed endpoints. To add a new source:
+#
+#   1. Add an entry below under the appropriate category
+#   2. Create an adapter in econscope/adapters/<source_id>.py
+#   3. Add the API key (if needed) to .env.example and .env
+#   4. Run: econscope verify-keys
+#
+# The catalog builder reads this file to know what to index.
+# The rate governor reads this file to enforce limits.
+# ============================================================================
+
+# ── MACRO / ECONOMIC ────────────────────────────────────────────────────────
+
+fred:
+  name: Federal Reserve Economic Data
+  provider: Federal Reserve Bank of St. Louis
+  url: https://fred.stlouisfed.org
+  api_base: https://api.stlouisfed.org/fred
+  key_env: FRED_API_KEY
+  key_required: true
+  rate_limit:
+    requests_per_minute: 120
+    daily_cap: null
+  batch_size: 1
+  series_count: 816000
+  coverage: US macro, rates, prices, employment, housing, money, trade, regional
+  frequency: [daily, weekly, monthly, quarterly, annual]
+  geography: [US, state, metro, county, international]
+  formats: [json, xml]
+  docs: https://fred.stlouisfed.org/docs/api/fred/
+  feeds:
+    - name: FRED release calendar
+      url: https://fred.stlouisfed.org/releases/calendar.rss
+      type: rss
+
+bls:
+  name: Bureau of Labor Statistics
+  provider: US Department of Labor
+  url: https://www.bls.gov
+  api_base: https://api.bls.gov/publicAPI/v2
+  key_env: BLS_API_KEY
+  key_required: false  # works without key, but rate-limited
+  rate_limit:
+    requests_per_day: 500  # with key; 25/day without
+    batch_size: 50  # series per request
+  coverage: CPI, PPI, employment, wages, JOLTS, productivity, consumer expenditure
+  frequency: [monthly, quarterly, annual]
+  geography: [US, state, metro]
+  formats: [json]
+  docs: https://www.bls.gov/developers/
+  feeds:
+    - name: BLS latest releases
+      url: https://www.bls.gov/feed/bls_latest.rss
+      type: rss
+    - name: BLS economic news releases
+      url: https://www.bls.gov/feed/bls_news.rss
+      type: rss
+
+bea:
+  name: Bureau of Economic Analysis
+  provider: US Department of Commerce
+  url: https://www.bea.gov
+  api_base: https://apps.bea.gov/api/data
+  key_env: BEA_API_KEY
+  key_required: true
+  rate_limit:
+    requests_per_minute: 100
+    daily_cap: 1000
+  coverage: GDP, personal income, PCE, IO tables, international trade in services, regional
+  frequency: [monthly, quarterly, annual]
+  geography: [US, state, metro, county]
+  formats: [json, xml]
+  docs: https://apps.bea.gov/api/_pdf/bea_web_service_api_user_guide.pdf
+  feeds:
+    - name: BEA news releases
+      url: https://www.bea.gov/rss.xml
+      type: rss
+
+census:
+  name: US Census Bureau
+  provider: US Department of Commerce
+  url: https://www.census.gov
+  api_base: https://api.census.gov/data
+  key_env: CENSUS_API_KEY
+  key_required: false  # works without, but rate-limited
+  rate_limit:
+    requests_per_day: 500
+    batch_size: 50  # variables per request
+  coverage: ACS demographics, County Business Patterns, trade, population, housing
+  frequency: [annual, decennial]
+  geography: [US, state, county, tract, block_group, zip]
+  formats: [json]
+  docs: https://www.census.gov/data/developers/guidance.html
+
+treasury:
+  name: US Treasury Fiscal Data
+  provider: US Department of the Treasury
+  url: https://fiscaldata.treasury.gov
+  api_base: https://api.fiscaldata.treasury.gov/services/api/fiscal_service
+  key_required: false
+  rate_limit:
+    requests_per_minute: 60
+  coverage: debt, auctions, spending, revenue, exchange rates, interest expense
+  frequency: [daily, monthly, quarterly, annual]
+  geography: [US]
+  formats: [json, csv]
+  docs: https://fiscaldata.treasury.gov/api-documentation/
+
+eia:
+  name: Energy Information Administration
+  provider: US Department of Energy
+  url: https://www.eia.gov
+  api_base: https://api.eia.gov/v2
+  key_env: EIA_API_KEY
+  key_required: true
+  rate_limit:
+    requests_per_second: 5
+    daily_cap: null
+  coverage: oil, gas, coal, electricity, renewables — prices, production, consumption, inventories
+  frequency: [weekly, monthly, annual]
+  geography: [US, state, PADD, international]
+  formats: [json]
+  docs: https://www.eia.gov/opendata/documentation.php
+  feeds:
+    - name: EIA today in energy
+      url: https://www.eia.gov/rss/todayinenergy.xml
+      type: rss
+
+dbnomics:
+  name: DBnomics
+  provider: DBnomics (aggregator)
+  url: https://db.nomics.world
+  api_base: https://db.nomics.world/api/v22
+  key_required: false
+  rate_limit:
+    requests_per_second: 5  # self-imposed politeness
+    batch_size: 100
+  series_count: 78000000  # 78M+ series from 70+ providers
+  coverage: aggregates FRED, ECB, Eurostat, OECD, IMF, World Bank, national stats offices, and 60+ more
+  frequency: [all]
+  geography: [global]
+  formats: [json, csv]
+  docs: https://db.nomics.world/docs/api/
+
+imf:
+  name: International Monetary Fund
+  provider: IMF
+  url: https://www.imf.org/en/Data
+  api_base: https://dataservices.imf.org/REST/SDMX_JSON.svc
+  key_required: false
+  rate_limit:
+    requests_per_second: 2
+  coverage: WEO forecasts, IFS (BoP, reserves, exchange rates), DOTS (direction of trade), GFSR
+  frequency: [monthly, quarterly, annual]
+  geography: [190+ countries]
+  formats: [json, xml]
+  feeds:
+    - name: IMF blog
+      url: https://www.imf.org/en/Blogs/rss
+      type: rss
+    - name: IMF working papers
+      url: https://www.imf.org/en/Publications/RSS?type=wp
+      type: rss
+
+worldbank:
+  name: World Bank
+  provider: World Bank Group
+  url: https://data.worldbank.org
+  api_base: https://api.worldbank.org/v2
+  key_required: false
+  rate_limit:
+    requests_per_second: 3
+  series_count: 16000
+  coverage: WDI — 16,000+ development indicators across 217 economies
+  frequency: [annual]
+  geography: [217 countries, regions]
+  formats: [json, xml]
+  feeds:
+    - name: World Bank research
+      url: https://blogs.worldbank.org/en/feeds
+      type: rss
+
+oecd:
+  name: OECD
+  provider: Organisation for Economic Co-operation and Development
+  url: https://data.oecd.org
+  api_base: https://sdmx.oecd.org/public/rest
+  key_required: false
+  rate_limit:
+    requests_per_second: 2
+  coverage: STAN (structural analysis), MEI (main economic indicators), TiVA (trade in value added), composite leading indicators
+  frequency: [monthly, quarterly, annual]
+  geography: [38 OECD members + partners]
+  formats: [json, xml, csv]
+
+eurostat:
+  name: Eurostat
+  provider: European Commission
+  url: https://ec.europa.eu/eurostat
+  api_base: https://ec.europa.eu/eurostat/api/dissemination/sdmx/2.1
+  key_required: false
+  rate_limit:
+    requests_per_second: 3
+  coverage: EU-wide — Comext trade, SBS, SILC (income), LFS (labor), HICP (prices)
+  frequency: [monthly, quarterly, annual]
+  geography: [EU 27 + candidates]
+  formats: [json, xml, csv]
+
+ecb:
+  name: European Central Bank Statistical Data Warehouse
+  provider: ECB
+  url: https://data.ecb.europa.eu
+  api_base: https://data-api.ecb.europa.eu/service
+  key_required: false
+  rate_limit:
+    requests_per_second: 3
+  coverage: monetary policy, bank lending, securities, exchange rates, BoP, macro projections
+  frequency: [daily, monthly, quarterly]
+  geography: [euro area, EU members]
+  formats: [json, xml, csv]
+  feeds:
+    - name: ECB press releases
+      url: https://www.ecb.europa.eu/rss/press.html
+      type: rss
+
+boe:
+  name: Bank of England
+  provider: Bank of England
+  url: https://www.bankofengland.co.uk/statistics
+  api_base: https://www.bankofengland.co.uk/boeapps/database/_iadb-fromshowcolumns.asp
+  key_required: false
+  rate_limit:
+    requests_per_second: 2
+  coverage: interest rates (back to 1694), monetary aggregates, credit conditions, financial stability
+  frequency: [daily, monthly, quarterly]
+  geography: [UK]
+  formats: [csv, xml]
+  feeds:
+    - name: BoE speeches
+      url: https://www.bankofengland.co.uk/rss/speeches
+      type: rss
+    - name: BoE publications
+      url: https://www.bankofengland.co.uk/rss/publications
+      type: rss
+
+ons:
+  name: UK Office for National Statistics
+  provider: ONS
+  url: https://www.ons.gov.uk
+  api_base: https://api.beta.ons.gov.uk/v1
+  key_required: false
+  rate_limit:
+    requests_per_second: 3
+  coverage: GDP, CPI, labour market, trade, regional GVA, house prices, population
+  frequency: [monthly, quarterly, annual]
+  geography: [UK, region, local authority]
+  formats: [json, csv]
+
+ilo:
+  name: International Labour Organization
+  provider: ILO
+  url: https://ilostat.ilo.org
+  api_base: https://www.ilo.org/sdmx/rest
+  key_required: false
+  rate_limit:
+    requests_per_second: 2
+  coverage: employment, unemployment, wages, working conditions, social protection — 189 countries
+  frequency: [monthly, quarterly, annual]
+  geography: [189 countries]
+  formats: [json, xml]
+
+comtrade:
+  name: UN Comtrade
+  provider: United Nations
+  url: https://comtradeplus.un.org
+  api_base: https://comtradeapi.un.org
+  key_env: COMTRADE_API_KEY
+  key_required: false  # limited without key
+  rate_limit:
+    requests_per_minute: 60
+    daily_cap: 250  # with free key
+  coverage: bilateral trade flows, HS6 detail, 200+ reporters
+  frequency: [monthly, annual]
+  geography: [200+ countries, bilateral]
+  formats: [json, csv]
+
+unctad:
+  name: UNCTAD
+  provider: United Nations
+  url: https://unctadstat.unctad.org
+  key_required: false
+  coverage: FDI flows/stocks, bilateral investment treaties, trade in services
+  frequency: [annual]
+  geography: [190+ countries]
+
+sipri:
+  name: SIPRI
+  provider: Stockholm International Peace Research Institute
+  url: https://www.sipri.org/databases
+  key_required: false
+  coverage: military expenditure, arms transfers, arms embargoes, multilateral peace operations
+  frequency: [annual]
+  geography: [global]
+  formats: [csv, xlsx]
+
+# ── FINANCIAL / CORPORATE ───────────────────────────────────────────────────
+
+edgar:
+  name: SEC EDGAR
+  provider: US Securities and Exchange Commission
+  url: https://www.sec.gov/edgar
+  api_base: https://efts.sec.gov/LATEST
+  key_required: false
+  rate_limit:
+    requests_per_second: 10  # with proper User-Agent
+  coverage: all SEC filings — 10-K, 10-Q, 8-K, S-1, DEF14A, 13D/13G, plus XBRL structured data
+  formats: [json, html, xml, xbrl]
+  docs: https://efts.sec.gov/LATEST/
+  internal_tool: forensic-econ  # wraps this source
+  feeds:
+    - name: EDGAR full-text search RSS
+      url: https://efts.sec.gov/LATEST/search-index?q={query}&dateRange=custom
+      type: api  # not RSS, but real-time searchable
+    - name: EDGAR company filings RSS
+      url: https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK={cik}&type=&dateb=&owner=include&count=40&search_text=&action=getcompany&output=atom
+      type: atom
+
+finnhub:
+  name: Finnhub
+  provider: Finnhub.io
+  url: https://finnhub.io
+  api_base: https://finnhub.io/api/v1
+  key_env: FINNHUB_API_KEY
+  key_required: true
+  rate_limit:
+    requests_per_minute: 60
+  coverage: real-time quotes, company news, SEC filings parsed, insider transactions, ESG scores, earnings, IPO calendar
+  formats: [json]
+  docs: https://finnhub.io/docs/api
+
+fmp:
+  name: Financial Modeling Prep
+  provider: FMP
+  url: https://financialmodelingprep.com
+  api_base: https://financialmodelingprep.com/api/v3
+  key_env: FMP_API_KEY
+  key_required: true
+  rate_limit:
+    requests_per_day: 250
+  coverage: income statements, balance sheets, cash flows, ratios, DCF, institutional holders, M&A
+  formats: [json]
+  docs: https://site.financialmodelingprep.com/developer/docs
+
+fdic:
+  name: FDIC BankFind Suite
+  provider: Federal Deposit Insurance Corporation
+  url: https://banks.data.fdic.gov
+  api_base: https://banks.data.fdic.gov/api
+  key_required: false
+  rate_limit:
+    requests_per_second: 5
+  coverage: every FDIC-insured institution — financials, branches, Call Reports, failures
+  formats: [json, csv]
+
+cftc:
+  name: CFTC Commitments of Traders
+  provider: Commodity Futures Trading Commission
+  url: https://www.cftc.gov/dea/futures/financial_lf.htm
+  key_required: false
+  coverage: futures positioning by trader category — who's long/short in every market
+  frequency: [weekly]
+  formats: [csv]  # bulk download
+
+fhfa:
+  name: FHFA House Price Index
+  provider: Federal Housing Finance Agency
+  url: https://www.fhfa.gov/data/hpi
+  api_base: https://api.fhfa.gov/hpi
+  key_required: false
+  rate_limit:
+    requests_per_second: 3
+  coverage: house price index by state, metro, zip — purchase-only, seasonally adjusted
+  frequency: [monthly, quarterly]
+  geography: [US, state, metro, zip]
+  formats: [json, csv]
+
+cfpb:
+  name: CFPB Consumer Complaint Database
+  provider: Consumer Financial Protection Bureau
+  url: https://www.consumerfinance.gov/data-research/consumer-complaints/
+  api_base: https://www.consumerfinance.gov/data-research/consumer-complaints/search/api/v1
+  key_required: false
+  coverage: 4M+ consumer complaints by company, product, issue, state, response
+  formats: [json, csv]
+
+companies_house:
+  name: UK Companies House
+  provider: UK Government
+  url: https://developer-specs.company-information.service.gov.uk
+  api_base: https://api.company-information.service.gov.uk
+  key_env: COMPANIES_HOUSE_API_KEY
+  key_required: true
+  rate_limit:
+    requests_per_minute: 600
+  coverage: UK company filings, officers, PSCs (persons of significant control), charges, insolvency
+  formats: [json]
+  internal_tool: groundtruth  # partially wraps this
+
+# ── LEGAL / REGULATORY ──────────────────────────────────────────────────────
+
+courtlistener:
+  name: CourtListener / RECAP
+  provider: Free Law Project
+  url: https://www.courtlistener.com
+  api_base: https://www.courtlistener.com/api/rest/v4
+  key_env: COURTLISTENER_API_TOKEN
+  key_required: false  # enhanced with key
+  rate_limit:
+    requests_per_second: 5
+  coverage: US court opinions, PACER dockets, oral arguments, judge data
+  formats: [json]
+  internal_tool: forensic-econ
+
+opensanctions:
+  name: OpenSanctions
+  provider: OpenSanctions.org
+  url: https://www.opensanctions.org
+  api_base: https://api.opensanctions.org
+  key_env: OPENSANCTIONS_API_KEY
+  key_required: false  # enhanced with key
+  coverage: sanctions lists, PEPs, entities of interest — entity matching via yente
+  formats: [json]
+  internal_tool: forensic-econ
+
+opencorporates:
+  name: OpenCorporates
+  provider: OpenCorporates
+  url: https://opencorporates.com
+  api_base: https://api.opencorporates.com/v0.4
+  key_env: OPENCORPORATES_API_TOKEN
+  key_required: false  # enhanced with key
+  rate_limit:
+    requests_per_day: 200  # without key; 10K with
+  coverage: corporate registry data from 170+ jurisdictions
+  formats: [json]
+  internal_tool: forensic-econ
+
+uspto:
+  name: USPTO PatentsView
+  provider: US Patent and Trademark Office
+  url: https://patentsview.org
+  api_base: https://search.patentsview.org/api/v1
+  key_required: false
+  rate_limit:
+    requests_per_minute: 45
+  coverage: patent grants, citations, assignees, CPC classes, inventors
+  formats: [json]
+
+fda:
+  name: openFDA
+  provider: US Food and Drug Administration
+  url: https://open.fda.gov
+  api_base: https://api.fda.gov
+  key_required: false
+  rate_limit:
+    requests_per_minute: 240
+  coverage: drug approvals, adverse events, recalls, inspections, labels
+  formats: [json]
+
+# ── ACADEMIC / RESEARCH ─────────────────────────────────────────────────────
+
+openalex:
+  name: OpenAlex
+  provider: OurResearch
+  url: https://openalex.org
+  api_base: https://api.openalex.org
+  key_required: false  # polite pool with email in User-Agent
+  rate_limit:
+    requests_per_second: 10  # polite pool
+  coverage: 250M+ scholarly works, authors, institutions, concepts, venues — successor to Microsoft Academic Graph
+  formats: [json]
+  feeds:
+    - name: NBER new working papers
+      url: https://www.nber.org/rss/new.xml
+      type: rss
+    - name: SSRN economics papers
+      url: https://papers.ssrn.com/sol3/Jnl_ISSN.cfm?abstractjournalid=1556936
+      type: web  # needs crawling, no native RSS
+
+semantic_scholar:
+  name: Semantic Scholar
+  provider: Allen Institute for AI
+  url: https://www.semanticscholar.org
+  api_base: https://api.semanticscholar.org/graph/v1
+  key_required: false
+  rate_limit:
+    requests_per_second: 3  # 100/sec with key
+  coverage: academic paper search, citation graph, recommendations, author profiles
+  formats: [json]
+
+# ── GEOSPATIAL ──────────────────────────────────────────────────────────────
+
+worldpop:
+  name: WorldPop
+  provider: University of Southampton
+  url: https://www.worldpop.org
+  key_required: false
+  coverage: global population grids, age/sex structure, urbanization
+  formats: [geotiff]
+  notes: bulk download, not API
+
+ghs_smod:
+  name: GHS-SMOD (Global Human Settlement)
+  provider: European Commission JRC
+  url: https://human-settlement.emergency.copernicus.eu/ghs_smod2023.php
+  key_required: false
+  coverage: settlement classification (urban/suburban/rural) at 1km resolution, global
+  formats: [geotiff]
+
+# ── NETWORK / OSINT ─────────────────────────────────────────────────────────
+
+wikidata:
+  name: Wikidata
+  provider: Wikimedia Foundation
+  url: https://www.wikidata.org
+  api_base: https://query.wikidata.org/sparql
+  key_required: false
+  rate_limit:
+    requests_per_minute: 30  # SPARQL endpoint
+  coverage: structured data on entities — companies, people, places, events
+  formats: [json, xml]
+  internal_tool: deepwire
+
+gdelt:
+  name: GDELT 2.0
+  provider: GDELT Project
+  url: https://www.gdeltproject.org
+  api_base: https://api.gdeltproject.org/api/v2
+  key_required: false
+  coverage: global news events, tone analysis, entity co-occurrence, geographic coverage
+  formats: [json, csv]
+  internal_tool: deepwire
+
+littlesis:
+  name: LittleSis
+  provider: Public Accountability Initiative
+  url: https://littlesis.org
+  api_base: https://littlesis.org/api
+  key_required: false
+  coverage: power and influence network — board memberships, donations, lobbying, family ties
+  formats: [json]
+  internal_tool: company-dissector
+
+# ── CRAWL TARGETS (via web-intel) ───────────────────────────────────────────
+# These are not APIs. They are structured web sources that web-intel crawls
+# on a scheduled basis. Add new ones freely.
+
+crawl_targets:
+  institutional_research:
+    - name: McKinsey Global Institute
+      domain: mckinsey.com
+      seed: https://www.mckinsey.com/mgi/overview
+      include: "/mgi/"
+      frequency: weekly
+
+    - name: Bain Insights
+      domain: bain.com
+      seed: https://www.bain.com/insights/
+      include: "/insights/"
+      frequency: weekly
+
+    - name: BCG Henderson Institute
+      domain: bcg.com
+      seed: https://www.bcg.com/henderson-institute
+      include: "/henderson-institute/"
+      frequency: weekly
+
+    - name: Deloitte Insights
+      domain: deloitte.com
+      seed: https://www2.deloitte.com/us/en/insights.html
+      include: "/insights/"
+      frequency: weekly
+
+    - name: PwC Publications
+      domain: pwc.com
+      seed: https://www.pwc.com/gx/en/research-insights.html
+      frequency: weekly
+
+    - name: EY Insights
+      domain: ey.com
+      seed: https://www.ey.com/en_us/insights
+      include: "/insights/"
+      frequency: weekly
+
+    - name: BIS Quarterly Review
+      domain: bis.org
+      seed: https://www.bis.org/publ/quarterly.htm
+      include: "/publ/"
+      frequency: quarterly
+
+  fed_research:
+    - name: NY Fed Liberty Street
+      domain: libertystreeteconomics.newyorkfed.org
+      seed: https://libertystreeteconomics.newyorkfed.org
+      frequency: daily
+
+    - name: SF Fed Economic Letter
+      domain: frbsf.org
+      seed: https://www.frbsf.org/research-and-insights/publications/economic-letter/
+      frequency: weekly
+
+    - name: Richmond Fed Research
+      domain: richmondfed.org
+      seed: https://www.richmondfed.org/research
+      frequency: weekly
+
+    - name: Chicago Fed
+      domain: chicagofed.org
+      seed: https://www.chicagofed.org/research/index
+      frequency: weekly
+
+    - name: Dallas Fed
+      domain: dallasfed.org
+      seed: https://www.dallasfed.org/research
+      frequency: weekly
+
+    - name: Atlanta Fed
+      domain: atlantafed.org
+      seed: https://www.atlantafed.org/research
+      frequency: weekly
+
+  think_tanks:
+    - name: Brookings Economic Studies
+      domain: brookings.edu
+      seed: https://www.brookings.edu/topic/economic-studies/
+      frequency: weekly
+
+    - name: Peterson Institute (PIIE)
+      domain: piie.com
+      seed: https://www.piie.com/research
+      frequency: weekly
+
+    - name: CEPR / VoxEU
+      domain: cepr.org
+      seed: https://cepr.org/voxeu/columns
+      frequency: daily
+
+    - name: Bruegel
+      domain: bruegel.org
+      seed: https://www.bruegel.org/publications
+      frequency: weekly
+
+# ============================================================================
+# RSS / ATOM FEEDS — Expert Opinions, Real-time Intelligence
+# ============================================================================
+# These are lightweight, high-signal feeds that pipe into the platform's
+# news/opinion stream. No API key needed. Updated continuously.
+
+feeds:
+
+  # ── Central banks and government ────────────────────────────────────────
+
+  - name: Federal Reserve Board speeches
+    url: https://www.federalreserve.gov/feeds/speeches.xml
+    type: rss
+    category: central_bank
+    tags: [fed, monetary_policy, speeches]
+
+  - name: Federal Reserve press releases
+    url: https://www.federalreserve.gov/feeds/press_all.xml
+    type: rss
+    category: central_bank
+    tags: [fed, monetary_policy, fomc]
+
+  - name: FOMC calendar
+    url: https://www.federalreserve.gov/feeds/fomc_calendar.xml
+    type: rss
+    category: central_bank
+    tags: [fed, fomc, calendar]
+
+  - name: ECB press releases
+    url: https://www.ecb.europa.eu/rss/press.html
+    type: rss
+    category: central_bank
+    tags: [ecb, monetary_policy, europe]
+
+  - name: Bank of England speeches
+    url: https://www.bankofengland.co.uk/rss/speeches
+    type: rss
+    category: central_bank
+    tags: [boe, monetary_policy, uk]
+
+  - name: BIS research
+    url: https://www.bis.org/doclist/bis_fsi_publs.rss
+    type: rss
+    category: central_bank
+    tags: [bis, financial_stability, global]
+
+  - name: US Treasury press releases
+    url: https://home.treasury.gov/system/files/136/treasury_press_releases.xml
+    type: rss
+    category: government
+    tags: [treasury, fiscal_policy, us]
+
+  # ── Data releases ───────────────────────────────────────────────────────
+
+  - name: FRED release calendar
+    url: https://fred.stlouisfed.org/releases/calendar.rss
+    type: rss
+    category: data_release
+    tags: [fred, calendar, all_indicators]
+
+  - name: BLS latest releases
+    url: https://www.bls.gov/feed/bls_latest.rss
+    type: rss
+    category: data_release
+    tags: [bls, employment, cpi, wages]
+
+  - name: BEA news releases
+    url: https://www.bea.gov/rss.xml
+    type: rss
+    category: data_release
+    tags: [bea, gdp, pce, income]
+
+  - name: EIA today in energy
+    url: https://www.eia.gov/rss/todayinenergy.xml
+    type: rss
+    category: data_release
+    tags: [eia, energy, oil, gas]
+
+  - name: Census economic indicators
+    url: https://www.census.gov/economic-indicators/indicator.xml
+    type: rss
+    category: data_release
+    tags: [census, trade, construction, retail]
+
+  # ── Academic / research ─────────────────────────────────────────────────
+
+  - name: NBER new working papers
+    url: https://www.nber.org/rss/new.xml
+    type: rss
+    category: academic
+    tags: [nber, economics, working_papers]
+
+  - name: VoxEU columns
+    url: https://cepr.org/rss/voxeu/columns.xml
+    type: rss
+    category: academic
+    tags: [cepr, voxeu, policy, europe]
+
+  - name: IMF blog
+    url: https://www.imf.org/en/Blogs/rss
+    type: rss
+    category: academic
+    tags: [imf, macro, global]
+
+  - name: IMF working papers
+    url: https://www.imf.org/en/Publications/RSS?type=wp
+    type: rss
+    category: academic
+    tags: [imf, working_papers]
+
+  - name: World Bank blogs
+    url: https://blogs.worldbank.org/en/feeds
+    type: rss
+    category: academic
+    tags: [world_bank, development, global]
+
+  - name: Brookings up front
+    url: https://www.brookings.edu/feed/
+    type: rss
+    category: think_tank
+    tags: [brookings, policy, us]
+
+  - name: Peterson Institute (PIIE)
+    url: https://www.piie.com/rss.xml
+    type: rss
+    category: think_tank
+    tags: [piie, trade, international]
+
+  # ── Expert economists / commentators ────────────────────────────────────
+
+  - name: Marginal Revolution (Cowen + Tabarrok)
+    url: https://marginalrevolution.com/feed
+    type: rss
+    category: expert_blog
+    tags: [economics, commentary, libertarian]
+
+  - name: Conversable Economist (Tim Taylor)
+    url: https://conversableeconomist.blogspot.com/feeds/posts/default?alt=rss
+    type: rss
+    category: expert_blog
+    tags: [economics, explainer, balanced]
+
+  - name: Dani Rodrik's weblog
+    url: https://rodrik.typepad.com/dani_rodriks_weblog/atom.xml
+    type: atom
+    category: expert_blog
+    tags: [trade, development, political_economy]
+
+  - name: Brad Setser (Council on Foreign Relations)
+    url: https://www.cfr.org/blog-feed/brad-setser
+    type: rss
+    category: expert_blog
+    tags: [trade, capital_flows, reserves]
+
+  - name: John Cochrane (Grumpy Economist)
+    url: https://johnhcochrane.blogspot.com/feeds/posts/default?alt=rss
+    type: rss
+    category: expert_blog
+    tags: [macro, finance, monetary_policy]
+
+  - name: Noah Smith (Noahpinion)
+    url: https://noahpinion.substack.com/feed
+    type: rss
+    category: expert_blog
+    tags: [economics, policy, commentary]
+
+  - name: Matt Levine (Money Stuff — Bloomberg)
+    url: https://newslettershub.com/rss/money-stuff-by-matt-levine
+    type: rss
+    category: expert_blog
+    tags: [finance, legal, corporate, humor]
+
+  - name: Adam Tooze (Chartbook)
+    url: https://adamtooze.substack.com/feed
+    type: rss
+    category: expert_blog
+    tags: [macro, geopolitics, history]
+
+  - name: Branko Milanovic (globalinequality)
+    url: https://branko2f7.substack.com/feed
+    type: rss
+    category: expert_blog
+    tags: [inequality, distribution, global]
+
+  - name: Isabella Weber
+    url: https://isabellamweber.substack.com/feed
+    type: rss
+    category: expert_blog
+    tags: [inflation, prices, political_economy]
+
+  - name: Kyla Scanlon (finance/economics)
+    url: https://kylascanlon.substack.com/feed
+    type: rss
+    category: expert_blog
+    tags: [economics, finance, vibes, explainer]
+
+  # ── Financial news ──────────────────────────────────────────────────────
+
+  - name: Reuters business news
+    url: https://www.reutersagency.com/feed/?taxonomy=best-sectors&post_type=best
+    type: rss
+    category: news
+    tags: [reuters, business, global]
+
+  - name: FT Alphaville
+    url: https://www.ft.com/alphaville?format=rss
+    type: rss
+    category: news
+    tags: [ft, finance, markets, commentary]
+
+  - name: The Economist finance
+    url: https://www.economist.com/finance-and-economics/rss.xml
+    type: rss
+    category: news
+    tags: [economist, finance, global]
+
+  - name: WSJ markets
+    url: https://feeds.a.dj.com/rss/RSSMarketsMain.xml
+    type: rss
+    category: news
+    tags: [wsj, markets, us]
+
+  - name: Bloomberg markets
+    url: https://feeds.bloomberg.com/markets/news.rss
+    type: rss
+    category: news
+    tags: [bloomberg, markets, global]
+
+  # ── SEC / regulatory ────────────────────────────────────────────────────
+
+  - name: SEC press releases
+    url: https://www.sec.gov/news/pressreleases.rss
+    type: rss
+    category: regulatory
+    tags: [sec, enforcement, us]
+
+  - name: SEC litigation releases
+    url: https://www.sec.gov/rss/litigation/litreleases.xml
+    type: rss
+    category: regulatory
+    tags: [sec, litigation, enforcement]
+
+  - name: SEC administrative proceedings
+    url: https://www.sec.gov/rss/litigation/admin.xml
+    type: rss
+    category: regulatory
+    tags: [sec, admin, enforcement]
+
+  - name: FTC press releases
+    url: https://www.ftc.gov/feeds/press-release-consumer-protection.xml
+    type: rss
+    category: regulatory
+    tags: [ftc, consumer_protection, antitrust]
+
+  - name: DOJ antitrust
+    url: https://www.justice.gov/atr/atr-recent-press-releases/feed
+    type: rss
+    category: regulatory
+    tags: [doj, antitrust, competition]
+
+# ============================================================================
+# ADDING NEW SOURCES
+# ============================================================================
+# 1. Add the source entry above under the appropriate category
+# 2. If it needs an API key, add to .env.example and .env
+# 3. Create an adapter in econscope/adapters/<source_id>.py
+#    (or add it to crawl_targets if it's a web source for web-intel)
+# 4. If it has an RSS/Atom feed, add it to the feeds section
+# 5. Run: econscope verify-keys
+# 6. Run: econscope catalog rebuild (to add it to the browsable catalog)
+# ============================================================================
