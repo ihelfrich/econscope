@@ -26,6 +26,14 @@ ADAPTERS = {
     "finnhub": ("econscope.adapters.finnhub", "FinnhubAdapter"),
     "fmp": ("econscope.adapters.fmp", "FMPAdapter"),
     "comtrade": ("econscope.adapters.comtrade", "ComtradeAdapter"),
+    "bis": ("econscope.adapters.bis", "BISAdapter"),
+    "usda": ("econscope.adapters.usda", "USDAAdapter"),
+    "imf": ("econscope.adapters.imf", "IMFAdapter"),
+    "noaa": ("econscope.adapters.noaa", "NOAAAdapter"),
+    "epa": ("econscope.adapters.epa", "EPAAdapter"),
+    "coingecko": ("econscope.adapters.coingecko", "CoinGeckoAdapter"),
+    "fao": ("econscope.adapters.faostat", "FAOAdapter"),
+    "redfin": ("econscope.adapters.redfin", "RedfinAdapter"),
 }
 
 
@@ -322,6 +330,14 @@ def sources():
         "finnhub": ("Finnhub", "FINNHUB_API_KEY", "Real-time stocks, fundamentals"),
         "fmp": ("FMP", "FMP_API_KEY", "Financials, ratios, historical prices"),
         "comtrade": ("Comtrade", "COMTRADE_API_KEY", "International bilateral trade"),
+        "bis": ("BIS", "", "Cross-border banking, property prices, credit-to-GDP (no key)"),
+        "usda": ("USDA NASS", "USDA_NASS_API_KEY", "Crop production, livestock, ag prices"),
+        "imf": ("IMF", "", "IFS, BOP, DOTS, WEO (no key)"),
+        "noaa": ("NOAA", "", "Temperature, precipitation, drought, 150yr records (no key)"),
+        "epa": ("EPA", "", "Emissions, TRI, air quality, Superfund (no key)"),
+        "coingecko": ("CoinGecko", "", "18K+ crypto prices, DeFi, market data (no key)"),
+        "fao": ("FAOSTAT", "", "Global crops, trade, land use, 245 countries (no key)"),
+        "redfin": ("Redfin", "", "US housing: prices, inventory, DOM by ZIP (no key)"),
     }
 
     typer.echo(f"{'ID':<10} {'Name':<12} {'Key':>5} {'Coverage'}")
