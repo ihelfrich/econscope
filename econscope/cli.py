@@ -18,6 +18,14 @@ ADAPTERS = {
     "fred": ("econscope.adapters.fred", "FREDAdapter"),
     "bls": ("econscope.adapters.bls", "BLSAdapter"),
     "bea": ("econscope.adapters.bea", "BEAAdapter"),
+    "treasury": ("econscope.adapters.treasury", "TreasuryAdapter"),
+    "eia": ("econscope.adapters.eia", "EIAAdapter"),
+    "census": ("econscope.adapters.census", "CensusAdapter"),
+    "worldbank": ("econscope.adapters.worldbank", "WorldBankAdapter"),
+    "dbnomics": ("econscope.adapters.dbnomics", "DBnomicsAdapter"),
+    "finnhub": ("econscope.adapters.finnhub", "FinnhubAdapter"),
+    "fmp": ("econscope.adapters.fmp", "FMPAdapter"),
+    "comtrade": ("econscope.adapters.comtrade", "ComtradeAdapter"),
 }
 
 
@@ -306,15 +314,24 @@ def sources():
         "fred": ("FRED", "FRED_API_KEY", "800K+ macro time series"),
         "bls": ("BLS", "BLS_API_KEY", "CPI, employment, wages, JOLTS"),
         "bea": ("BEA", "BEA_API_KEY", "GDP, PCE, personal income, IO tables"),
+        "treasury": ("Treasury", "", "Federal debt, rates, spending (no key)"),
+        "eia": ("EIA", "EIA_API_KEY", "Crude oil, natural gas, electricity, coal"),
+        "census": ("Census", "CENSUS_API_KEY", "ACS, population, business patterns"),
+        "worldbank": ("World Bank", "", "15K+ development indicators (no key)"),
+        "dbnomics": ("DBnomics", "", "80+ providers: ECB, Eurostat, IMF, OECD (no key)"),
+        "finnhub": ("Finnhub", "FINNHUB_API_KEY", "Real-time stocks, fundamentals"),
+        "fmp": ("FMP", "FMP_API_KEY", "Financials, ratios, historical prices"),
+        "comtrade": ("Comtrade", "COMTRADE_API_KEY", "International bilateral trade"),
     }
 
-    typer.echo(f"{'ID':<8} {'Name':<8} {'Key':>5} {'Coverage'}")
-    typer.echo("-" * 60)
+    typer.echo(f"{'ID':<10} {'Name':<12} {'Key':>5} {'Coverage'}")
+    typer.echo("-" * 70)
     for source_id, (name, key_var, coverage) in source_info.items():
-        has_key = "yes" if get_key(key_var) else "no"
-        registered = source_id in ADAPTERS
-        status = "ready" if registered and has_key == "yes" else "key missing" if not has_key == "yes" else "no adapter"
-        typer.echo(f"{source_id:<8} {name:<8} {has_key:>5}  {coverage}")
+        if not key_var:
+            has_key = "n/a"  # No key needed
+        else:
+            has_key = "yes" if get_key(key_var) else "no"
+        typer.echo(f"{source_id:<10} {name:<12} {has_key:>5}  {coverage}")
 
 
 @app.command(name="verify-keys")

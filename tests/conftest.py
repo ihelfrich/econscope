@@ -94,3 +94,48 @@ def has_bls_key():
     if not key:
         pytest.skip("BLS_API_KEY not set")
     return key
+
+
+@pytest.fixture
+def has_eia_key():
+    """Skip test if EIA API key is not available."""
+    key = os.environ.get("EIA_API_KEY")
+    if not key:
+        pytest.skip("EIA_API_KEY not set")
+    return key
+
+
+@pytest.fixture
+def has_census_key():
+    """Skip test if Census API key is not available."""
+    key = os.environ.get("CENSUS_API_KEY")
+    if not key:
+        pytest.skip("CENSUS_API_KEY not set")
+    return key
+
+
+@pytest.fixture
+def has_finnhub_key():
+    """Skip test if Finnhub API key is not available."""
+    key = os.environ.get("FINNHUB_API_KEY")
+    if not key:
+        pytest.skip("FINNHUB_API_KEY not set")
+    return key
+
+
+@pytest.fixture
+def has_fmp_key():
+    """Skip test if FMP API key is not available."""
+    key = os.environ.get("FMP_API_KEY")
+    if not key:
+        pytest.skip("FMP_API_KEY not set")
+    return key
+
+
+@pytest.fixture
+def has_comtrade_key():
+    """Skip test if Comtrade API key is not available."""
+    key = os.environ.get("COMTRADE_API_KEY")
+    if not key:
+        pytest.skip("COMTRADE_API_KEY not set")
+    return key
