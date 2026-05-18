@@ -2,7 +2,12 @@
 *.pyc
 __pycache__/
 .venv/
+*.egg-info/
+dist/
+build/
 *.duckdb
 *.duckdb.wal
 .DS_Store
+data/
 catalog/catalog.json
+.pytest_cache/

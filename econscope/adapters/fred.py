@@ -29,7 +29,15 @@ class FREDAdapter(BaseAdapter):
     def pull_series(
         self, series_id: str, start: str = None, end: str = None
     ) -> PullResult:
-        meta = self.get_metadata(series_id)
+        try:
+            meta = self.get_metadata(series_id)
+        except Exception as e:
+            return PullResult(
+                source=self.source_id,
+                series_id=series_id,
+                metadata=SeriesMetadata(source=self.source_id, series_id=series_id),
+                error=f"Failed to fetch metadata: {e}",
+            )
 
         params = {"series_id": series_id}
         if start:

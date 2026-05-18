@@ -162,8 +162,9 @@ class BLSAdapter(BaseAdapter):
         self, series_ids: List[str], start: str = None, end: str = None
     ) -> List[PullResult]:
         """Pull up to 50 series in one request (BLS batch limit)."""
+        from datetime import date as Date
         start_year = int(start[:4]) if start else None
-        end_year = int(end[:4]) if end else None
+        end_year = int(end[:4]) if end else Date.today().year
 
         results = []
         # BLS allows 50 series per request

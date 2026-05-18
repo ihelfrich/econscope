@@ -973,3 +973,4 @@ This platform has four things Shaw doesn't offer the world:
 ---
 
 *This document is the development blueprint. Update it as decisions are made and phases are completed.*
+
