@@ -42,6 +42,8 @@ ADAPTERS = {
     "oecd": ("econscope.adapters.oecd", "OECDAdapter"),
     "usgs": ("econscope.adapters.usgs", "USGSAdapter"),
     "patents": ("econscope.adapters.patents", "PatentsViewAdapter"),
+    "courtlistener": ("econscope.adapters.courtlistener", "CourtListenerAdapter"),
+    "gdelt": ("econscope.adapters.gdelt", "GDELTAdapter"),
 }
 
 
@@ -354,6 +356,8 @@ def sources():
         "oecd": ("OECD", "", "38 countries: GDP, CPI, unemployment, inequality (no key)"),
         "usgs": ("USGS", "", "Earthquakes worldwide: magnitude, depth, location (no key)"),
         "patents": ("PatentsView", "", "USPTO patents: grants, assignees, CPC classes (no key)"),
+        "courtlistener": ("CourtListener", "COURTLISTENER_API_TOKEN", "Federal court opinions, dockets, judges, citations"),
+        "gdelt": ("GDELT", "", "Global events, news volume, sentiment, geographic hotspots (no key)"),
     }
 
     typer.echo(f"{'ID':<10} {'Name':<12} {'Key':>5} {'Coverage'}")
