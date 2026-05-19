@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="ECONSCOPE — a unified economic-intelligence platform for institutional research. Built and operated by Dr. Ian Helfrich. By engagement only.">
+<meta name="theme-color" content="#1a1a1a">
+<title>ECONSCOPE — Economic-Intelligence Platform</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,400&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- Background system: hairline grid + grain. No particles. -->
+<div class="bg-grid" aria-hidden="true"></div>
+<svg class="bg-grain" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+  <filter id="g"><feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="2" stitchTiles="stitch"/></filter>
+  <rect width="100%" height="100%" filter="url(#g)"/>
+</svg>
+<canvas id="shader-canvas" aria-hidden="true"></canvas>
+
+<header class="mast">
+  <div class="mast__wm">ECONSCOPE</div>
+  <nav class="mast__nav" aria-label="primary">
+    <a href="#methods">Methods</a>
+    <a href="#principal">Principal</a>
+    <a href="#access">Access</a>
+  </nav>
+</header>
+
+<main>
+
+<section class="hero">
+  <p class="hero__eyebrow">An economic-intelligence platform for institutional research.</p>
+
+  <h1 class="hero__mark">
+    <span aria-label="ECONSCOPE">ECONSCOPE</span>
+  </h1>
+
+  <p class="hero__lede">
+    ECONSCOPE is a single analytical environment that integrates forensic finance, corporate-network discovery, and regulatory and litigation intelligence under one audit trail. It is operated as a bespoke research engagement, not as a self-serve product.
+  </p>
+
+  <div class="hero__stamp" role="contentinfo">
+    <span>30 data sources</span>
+    <span class="dot">·</span>
+    <span>4.3M sanctioned entities</span>
+    <span class="dot">·</span>
+    <span>2.4M federal court records</span>
+    <span class="dot">·</span>
+    <span>v 0.3</span>
+    <span class="dot">·</span>
+    <span>May 2026</span>
+  </div>
+
+  <p class="hero__cta">
+    <a href="#access" class="link link--cta">Request access →</a>
+  </p>
+</section>
+
+<!-- METHODS / CAPABILITIES -->
+<section class="methods" id="methods">
+  <p class="eyebrow">I. Methods</p>
+  <h2 class="section-h">A research stack assembled for one question:<br><em>what is actually going on?</em></h2>
+
+  <div class="methods__grid">
+    <article class="cell">
+      <p class="cell__num">01</p>
+      <h3 class="cell__title">Forensic accounting</h3>
+      <p class="cell__body">Beneish M, Altman Z, Sloan accruals, Piotroski F. Run programmatically against the full XBRL filing history. Bespoke screens for industry-specific manipulation patterns.</p>
+      <p class="cell__cite">Beneish, M. D. (1999) · Altman, E. I. (1968) · Sloan, R. G. (1996)</p>
+    </article>
+
+    <article class="cell">
+      <p class="cell__num">02</p>
+      <h3 class="cell__title">Network discovery</h3>
+      <p class="cell__body">Multi-source connection graphs across SEC EDGAR full-text, ownership filings, Wikidata, GDELT, and federal court records. Brokerage centrality and shared-financier identification.</p>
+      <p class="cell__cite">Helfrich, I. (2026) · deepwire, ECONSCOPE</p>
+    </article>
+
+    <article class="cell">
+      <p class="cell__num">03</p>
+      <h3 class="cell__title">Governance parsing</h3>
+      <p class="cell__body">Structured extraction from proxy filings — special-committee composition, fairness-opinion advisors, related-party transactions, and voting-result history. DEFM14A, DEF 14A, PRER14A.</p>
+      <p class="cell__cite">SEC EDGAR · econscope/intel/proxies</p>
+    </article>
+
+    <article class="cell">
+      <p class="cell__num">04</p>
+      <h3 class="cell__title">Regulatory and legal</h3>
+      <p class="cell__body">OpenSanctions screening against 4.3 million global entities. CourtListener federal-docket time series. Litigation clusters, regulatory-action timelines, sanctions-watchlist resolution.</p>
+      <p class="cell__cite">OpenSanctions, Free Law Project / CourtListener</p>
+    </article>
+
+    <article class="cell">
+      <p class="cell__num">05</p>
+      <h3 class="cell__title">Macro and sectoral</h3>
+      <p class="cell__body">Thirty integrated data sources including FRED, BLS, BEA, Eurostat, OECD, IMF, BIS, World Bank, Comtrade. Cross-source temporal joins, correlation, and structural decomposition.</p>
+      <p class="cell__cite">FRED, BLS, BEA, OECD, IMF, BIS · 30 adapters</p>
+    </article>
+
+    <article class="cell">
+      <p class="cell__num">06</p>
+      <h3 class="cell__title">Audit-grade reporting</h3>
+      <p class="cell__body">Every figure carries provenance. Every pull is logged in a DuckDB audit trail. Outputs are publication-quality SVG, PDF, and DOCX, with explicit retrieval statements for archival sources.</p>
+      <p class="cell__cite">DuckDB · pandoc · xelatex</p>
+    </article>
+  </div>
+</section>
+
+<!-- PRINCIPAL -->
+<section class="principal" id="principal">
+  <p class="eyebrow">II. Principal</p>
+  <h2 class="section-h">Built and operated by a working economist.</h2>
+
+  <div class="principal__grid">
+    <div class="principal__bio">
+      <p>
+        <strong>Dr. Ian Helfrich</strong> is an economist working at the intersection of international trade, economic-network analysis, and forensic finance. Doctoral work at the Georgia Institute of Technology on network centrality, spatial heterogeneity, and optimal transport in trade models (2024). Independent research with active pipeline across topological trade geometry, geospatial population grids, and capital-market network analysis.
+      </p>
+      <p>
+        ECONSCOPE is the operational expression of that research practice. The platform is what allows one person to deliver in days what most teams deliver in weeks — under the same audit standard.
+      </p>
+    </div>
+
+    <dl class="principal__refs">
+      <dt>Degree</dt>
+      <dd>PhD Economics, Georgia Tech (2024)</dd>
+
+      <dt>Site</dt>
+      <dd><a href="https://ianhelfrich.com" target="_blank" rel="noopener">ianhelfrich.com →</a></dd>
+
+      <dt>Repository</dt>
+      <dd><a href="https://github.com/ihelfrich/econscope" target="_blank" rel="noopener">github.com/ihelfrich/econscope →</a></dd>
+
+      <dt>Scholar</dt>
+      <dd><a href="https://scholar.google.com/citations?user=ihelfrich" target="_blank" rel="noopener">Google Scholar →</a></dd>
+
+      <dt>Affiliations</dt>
+      <dd>Barcelona GSE alumnus</dd>
+    </dl>
+  </div>
+</section>
+
+<!-- ACCESS -->
+<section class="access" id="access">
+  <p class="eyebrow">III. Access</p>
+  <h2 class="section-h">There is no general-access tier.</h2>
+
+  <div class="access__grid">
+    <div class="access__body">
+      <p class="access__lede">
+        Each engagement is scoped to a specific question — a takeover, a litigation, a portfolio screen, a counterparty review — and priced against the scope, the data licensing required, and the duration of analytical support after delivery.
+      </p>
+      <p>
+        The underlying tooling is open and reproducible. The analytical work, the curation, and the interpretation are bespoke. Inquiries that include a name, an affiliation, and a one-paragraph description of the question receive a response within two working days.
+      </p>
+    </div>
+
+    <dl class="access__terms">
+      <dt>Form</dt>
+      <dd>Project engagement, with optional retainer for follow-on support.</dd>
+
+      <dt>Audience</dt>
+      <dd>Funds, family offices, legal counsel, journalists, academic teams, principals.</dd>
+
+      <dt>Confidentiality</dt>
+      <dd>NDA standard. Single-counterparty engagements by default.</dd>
+
+      <dt>Pricing</dt>
+      <dd>By scope. Indicative ranges on consultation.</dd>
+
+      <dt>Contact</dt>
+      <dd><a href="mailto:ianthelfrich@gmail.com?subject=ECONSCOPE%20engagement%20inquiry">ianthelfrich@gmail.com →</a></dd>
+    </dl>
+  </div>
+</section>
+
+</main>
+
+<footer class="foot">
+  <div class="foot__top">
+    <span class="foot__wm">ECONSCOPE</span>
+    <span class="foot__by">A research practice of Dr. Ian Helfrich.</span>
+  </div>
+
+  <div class="foot__refs">
+    <p class="foot__refs-label">Sources integrated</p>
+    <p class="foot__refs-list">
+      FRED · BLS · BEA · SEC EDGAR · OpenSanctions · CourtListener · GDELT · Eurostat · OECD · IMF · BIS · World Bank · Comtrade · USDA · USPTO · Treasury · EIA · Census · FDIC · USASpending · NOAA · EPA · CoinGecko · FAOSTAT · Redfin · Finnhub · FMP · DBnomics · USGS · UMich Surveys of Consumers
+    </p>
+  </div>
+
+  <div class="foot__bottom">
+    <span>© 2026 Helfrich Research.</span>
+    <span>v 0.3 · last update May 2026</span>
+    <span>By engagement only.</span>
+  </div>
+</footer>
+
+<script src="js/shader.js"></script>
+</body>
+</html>
