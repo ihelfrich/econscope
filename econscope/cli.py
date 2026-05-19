@@ -565,5 +565,10 @@ def warehouse_join_cmd(
             typer.echo(f"{date:>12}{vals}")
 
 
+# Register intel/analyze/report commands onto the typer app.
+from econscope.cli_intel import register as _register_intel
+_register_intel(app)
+
+
 if __name__ == "__main__":
     app()

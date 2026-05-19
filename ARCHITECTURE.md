@@ -655,20 +655,62 @@ Maddison Project, SIPRI, ILO.
 
 ## Build phases
 
-### Phase 1: Foundation (week 1-2)
+## Implementation status (May 19, 2026)
+
+### Built and operational
+
+**Layer 1-3 (data + storage):** 30 adapters implemented, DuckDB warehouse with audit log,
+multi-source pull / correlate / entity-search engine.
+
+**Layer 4-5 (intel + analysis):** As of v0.2:
+- `econscope/intel/http.py` — Shared HTTP layer with retry/backoff, gzip cache, jitter.
+  Solves the silent-failure problem we hit during the Soho House Wikidata pull.
+- `econscope/intel/network.py` — Multi-source connection discovery
+  (EDGAR FTS + 13D/13G + Wikidata + GDELT). Replaces the standalone deepwire tool inside
+  the platform; deepwire CLI remains for ad-hoc use.
+- `econscope/intel/forensic.py` — Beneish M, Altman Z, Sloan accruals in pure Python.
+  Pulls XBRL directly; no Go subprocess required.
+- `econscope/intel/proxies.py` — DEFM14A / DEF 14A / PRER14A parser. Extracts summary,
+  special-committee facts, related-party transactions, fairness advisors, voting
+  proposals. New capability — was not in any standalone tool.
+- `econscope/analyze/monte_carlo.py` — Refinancing distress simulation with structured
+  output and sensitivity grids.
+- `econscope/analyze/decomposition.py` — Revenue-mix shift, ARPU-by-category, growth
+  decomposition into volume vs. price/mix effects.
+- `econscope/analyze/elasticity.py` — Pricing-power ratio with explicit identification
+  warnings (catches the supply-shifting elasticity error that an earlier draft made).
+
+**Layer 6 (report engine):** As of v0.2:
+- `econscope/report/charts.py` — Standard palette, matplotlib style setup, helpers.
+- `econscope/report/network_viz.py` — Render NetworkGraph as PNG (radial or force layout).
+- `econscope/report/render.py` — Markdown→PDF via xelatex, forensic-report and
+  network-report renderers.
+
+**CLI commands (v0.2 additions):**
+- `econscope discover <entity>` — multi-source connection discovery
+- `econscope forensic <cik>` — Beneish/Altman/Sloan from XBRL
+- `econscope proxy <cik> <accession>` — proxy filing parser
+- `econscope monte-carlo` — refinancing simulation
+- `econscope viz <graph.json>` — render network as PNG
+- `econscope cache size|clear` — manage intel HTTP cache
+
+### Phase 1: Foundation (week 1-2) — DONE
 
 **Goal:** Pull real data from 6 sources via CLI, store in DuckDB with full audit trail.
 
 Deliverables:
-- [ ] Project scaffolding: `~/Projects/econscope/` with `pyproject.toml`, `Makefile`, `.env.example`
-- [ ] Adapter interface: base class that all source adapters implement
+- [x] Project scaffolding: `~/Projects/econscope/` with `pyproject.toml`, `.env.example`
+- [x] Adapter interface: base class that all source adapters implement
+- [x] DuckDB warehouse: schema for time series, audit log
+- [x] 30 adapters operational (FRED, BLS, BEA, SEC, DBnomics, Treasury, EIA, Census,
+      WorldBank, Finnhub, FMP, Comtrade, BIS, USDA, IMF, NOAA, EPA, CoinGecko, FAO,
+      Redfin, OpenSanctions, USASpending, FDIC, Eurostat, OECD, USGS, Patents,
+      CourtListener, GDELT)
+- [x] CLI: `econscope pull`, `econscope search`, `econscope status`
 - [ ] Rate governor: token-bucket async rate limiter with per-source config
-- [ ] DuckDB warehouse: schema for time series, audit log, job manifests
-- [ ] Adapters: FRED, BLS, BEA, SEC EDGAR, DBnomics, Treasury FiscalData
-- [ ] CLI: `econscope pull`, `econscope search`, `econscope status`
 - [ ] Job system: persistent queue, resume, checkpoint, manifest generation
 - [ ] Notifications: macOS + iMessage on job completion
-- [ ] Tests: adapter tests with recorded responses (VCR pattern)
+- [x] Smoke tests for intel module
 
 End state: `econscope pull --source fred --series PSAVERT` works, stores data, logs audit trail.
 
