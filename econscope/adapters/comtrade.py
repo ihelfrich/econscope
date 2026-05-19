@@ -17,7 +17,7 @@ from typing import List, Optional
 from urllib.request import urlopen, Request
 from urllib.parse import urlencode
 
-from econscope.config import require_key
+from econscope.config import get_key
 from econscope.adapters.base import BaseAdapter, PullResult, SeriesMetadata
 
 
@@ -70,9 +70,11 @@ class ComtradeAdapter(BaseAdapter):
     BASE = "https://comtradeapi.un.org/data/v1/get/C/A"
 
     def __init__(self):
-        self.api_key = require_key(self.key_env_var)
+        self.api_key = get_key(self.key_env_var)
 
     def _get(self, **params) -> tuple[dict, bytes]:
+        if not self.api_key:
+            raise RuntimeError("COMTRADE_API_KEY not set. Register at https://comtradeplus.un.org/")
         url = f"{self.BASE}/{params.pop('reporter', '842')}/{params.pop('year', 'recent')}"
         if params:
             url += f"?{urlencode(params)}"

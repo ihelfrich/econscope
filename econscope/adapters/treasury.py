@@ -10,11 +10,21 @@ Treasury securities, savings bonds, debt to the penny.
 from __future__ import annotations
 
 import json
+import ssl
 from typing import Optional
 from urllib.request import urlopen
 from urllib.parse import urlencode
 
 from econscope.adapters.base import BaseAdapter, PullResult, SeriesMetadata
+
+# Treasury.gov uses a cert chain Python 3.9 doesn't always trust
+_SSL_CTX = ssl.create_default_context()
+try:
+    import certifi
+    _SSL_CTX.load_verify_locations(certifi.where())
+except ImportError:
+    _SSL_CTX.check_hostname = False
+    _SSL_CTX.verify_mode = ssl.CERT_NONE
 
 
 # Well-known endpoints with human-readable names
@@ -82,7 +92,7 @@ class TreasuryAdapter(BaseAdapter):
         url = f"{self.BASE}/{endpoint}"
         if params:
             url += f"?{urlencode(params)}"
-        raw = urlopen(url).read()
+        raw = urlopen(url, context=_SSL_CTX).read()
         return json.loads(raw), raw
 
     def pull_series(

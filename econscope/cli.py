@@ -34,6 +34,14 @@ ADAPTERS = {
     "coingecko": ("econscope.adapters.coingecko", "CoinGeckoAdapter"),
     "fao": ("econscope.adapters.faostat", "FAOAdapter"),
     "redfin": ("econscope.adapters.redfin", "RedfinAdapter"),
+    "opensanctions": ("econscope.adapters.opensanctions", "OpenSanctionsAdapter"),
+    "usaspending": ("econscope.adapters.usaspending", "USASpendingAdapter"),
+    "fdic": ("econscope.adapters.fdic", "FDICAdapter"),
+    "sec": ("econscope.adapters.sec_edgar", "SECEdgarAdapter"),
+    "eurostat": ("econscope.adapters.eurostat", "EurostatAdapter"),
+    "oecd": ("econscope.adapters.oecd", "OECDAdapter"),
+    "usgs": ("econscope.adapters.usgs", "USGSAdapter"),
+    "patents": ("econscope.adapters.patents", "PatentsViewAdapter"),
 }
 
 
@@ -338,6 +346,14 @@ def sources():
         "coingecko": ("CoinGecko", "", "18K+ crypto prices, DeFi, market data (no key)"),
         "fao": ("FAOSTAT", "", "Global crops, trade, land use, 245 countries (no key)"),
         "redfin": ("Redfin", "", "US housing: prices, inventory, DOM by ZIP (no key)"),
+        "opensanctions": ("OpenSanctions", "", "4.3M entities: sanctions, PEPs, companies (local)"),
+        "usaspending": ("USASpending", "", "Federal spending, contracts, grants, loans (no key)"),
+        "fdic": ("FDIC", "", "Bank financials, failures, Call Reports (no key)"),
+        "sec": ("SEC EDGAR", "", "XBRL company facts, filings, full-text search (no key)"),
+        "eurostat": ("Eurostat", "", "EU GDP, unemployment, HICP, trade, demographics (no key)"),
+        "oecd": ("OECD", "", "38 countries: GDP, CPI, unemployment, inequality (no key)"),
+        "usgs": ("USGS", "", "Earthquakes worldwide: magnitude, depth, location (no key)"),
+        "patents": ("PatentsView", "", "USPTO patents: grants, assignees, CPC classes (no key)"),
     }
 
     typer.echo(f"{'ID':<10} {'Name':<12} {'Key':>5} {'Coverage'}")

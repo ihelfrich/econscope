@@ -14,7 +14,7 @@ from typing import Optional
 from urllib.request import urlopen
 from urllib.parse import urlencode
 
-from econscope.config import require_key
+from econscope.config import get_key
 from econscope.adapters.base import BaseAdapter, PullResult, SeriesMetadata
 
 
@@ -86,9 +86,11 @@ class USDAAdapter(BaseAdapter):
     BASE = "https://quickstats.nass.usda.gov/api/api_GET/"
 
     def __init__(self):
-        self.api_key = require_key(self.key_env_var)
+        self.api_key = get_key(self.key_env_var)
 
     def _get(self, **params) -> tuple[dict, bytes]:
+        if not self.api_key:
+            raise RuntimeError("USDA_NASS_API_KEY not set. Register at https://quickstats.nass.usda.gov/api/")
         params["key"] = self.api_key
         params["format"] = "JSON"
         url = f"{self.BASE}?{urlencode(params)}"
