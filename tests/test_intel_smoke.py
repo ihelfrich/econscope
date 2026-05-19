@@ -120,6 +120,73 @@ def test_sloan_handles_missing():
     assert sloan_accruals({"net_income": 100, "cash_from_ops": 50}) is None
 
 
+def test_piotroski_strong_company():
+    """A company that improved on every dimension should score 9."""
+    from econscope.intel.forensic import piotroski_f_score
+    curr = {
+        "total_assets": 1100, "net_income": 150, "cash_from_ops": 200,
+        "revenue": 1300, "long_term_debt": 100, "current_assets": 500,
+        "current_liabilities": 200, "cost_of_goods": 700,
+        "stockholders_equity": 600,
+    }
+    prev = {
+        "total_assets": 1000, "net_income": 100, "cash_from_ops": 120,
+        "revenue": 1100, "long_term_debt": 150, "current_assets": 400,
+        "current_liabilities": 250, "cost_of_goods": 650,
+        "stockholders_equity": 580,
+    }
+    score = piotroski_f_score(curr, prev)
+    assert score is not None
+    assert score >= 8, f"Expected strong score, got {score}"
+
+
+def test_piotroski_no_prior_year():
+    """With prev=None, max possible is 3 (only F1, F2, F4 testable)."""
+    from econscope.intel.forensic import piotroski_f_score
+    curr = {"net_income": 100, "cash_from_ops": 200, "total_assets": 1000}
+    score = piotroski_f_score(curr, prev=None)
+    assert score is not None
+    assert 0 <= score <= 3
+
+
+def test_going_concern_detection():
+    from econscope.intel.forensic import going_concern_score
+    text = "There is substantial doubt about our ability to continue as a going concern."
+    r = going_concern_score(text)
+    assert r["flagged"] is True
+    assert r["phrase_count"] >= 1
+
+
+def test_going_concern_clean():
+    from econscope.intel.forensic import going_concern_score
+    text = "The company expects to continue normal operations through next year."
+    r = going_concern_score(text)
+    assert r["flagged"] is False
+
+
+# ── textdiff ──────────────────────────────────────────────────────────────────
+
+def test_jaccard_identical():
+    from econscope.intel.textdiff import jaccard_similarity
+    t = "the quick brown fox jumps over the lazy dog and rests"
+    assert jaccard_similarity(t, t) == 1.0
+
+
+def test_jaccard_completely_different():
+    from econscope.intel.textdiff import jaccard_similarity
+    a = "alpha beta gamma delta epsilon zeta eta theta"
+    b = "lambda mu nu xi omicron pi rho sigma"
+    assert jaccard_similarity(a, b) == 0.0
+
+
+def test_jaccard_partial_overlap():
+    from econscope.intel.textdiff import jaccard_similarity
+    a = "alpha beta gamma delta epsilon zeta eta theta iota kappa"
+    b = "alpha beta gamma delta epsilon mu nu xi omicron pi"
+    sim = jaccard_similarity(a, b)
+    assert 0 < sim < 1, f"Expected partial overlap, got {sim}"
+
+
 # ── analyze.monte_carlo ───────────────────────────────────────────────────────
 
 def test_refinancing_simulation_reproducible():

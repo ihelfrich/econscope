@@ -279,6 +279,131 @@ def sloan_accruals(inputs: dict) -> Optional[float]:
         return None
 
 
+# ── Piotroski F-Score ────────────────────────────────────────────────────────
+
+def piotroski_f_score(curr: dict, prev: Optional[dict] = None) -> Optional[int]:
+    """Compute Piotroski F-Score (Piotroski 2000): 0-9 financial-strength score.
+
+    Sums 9 binary tests across three dimensions:
+
+    Profitability (4 tests):
+      F1: Net income > 0
+      F2: Cash flow from operations > 0
+      F3: ROA improved vs prior year (requires prev)
+      F4: Cash flow from ops > net income (quality of earnings)
+
+    Leverage / liquidity (3 tests, all require prev):
+      F5: Long-term debt to assets decreased
+      F6: Current ratio improved
+      F7: No new shares issued (proxy: equity didn't grow excluding retained earnings)
+
+    Operating efficiency (2 tests, both require prev):
+      F8: Gross margin improved
+      F9: Asset turnover (sales / assets) improved
+
+    Thresholds:
+      F-Score >= 8: strong (top quintile typically outperforms)
+      F-Score <= 2: weak (bottom quintile typically underperforms)
+
+    If prev is None, only F1, F2, F4 are computed (max score 3).
+    """
+    try:
+        score = 0
+        ta = curr.get("total_assets") or 0
+        ni = curr.get("net_income") or 0
+        cfo = curr.get("cash_from_ops") or 0
+        rev = curr.get("revenue") or 0
+
+        # F1: net income > 0
+        if ni > 0: score += 1
+        # F2: CFO > 0
+        if cfo > 0: score += 1
+        # F4: CFO > NI (cash-quality of earnings)
+        if cfo > ni: score += 1
+
+        if prev is None:
+            return score
+
+        ta_p = prev.get("total_assets") or 0
+        ni_p = prev.get("net_income") or 0
+        rev_p = prev.get("revenue") or 0
+        ltd = curr.get("long_term_debt") or 0
+        ltd_p = prev.get("long_term_debt") or 0
+        ca = curr.get("current_assets") or 0
+        cl = curr.get("current_liabilities") or 0
+        ca_p = prev.get("current_assets") or 0
+        cl_p = prev.get("current_liabilities") or 0
+        cogs = curr.get("cost_of_goods") or 0
+        cogs_p = prev.get("cost_of_goods") or 0
+        eq = curr.get("stockholders_equity") or 0
+        eq_p = prev.get("stockholders_equity") or 0
+
+        # F3: ROA improved
+        roa = ni / ta if ta else 0
+        roa_p = ni_p / ta_p if ta_p else 0
+        if roa > roa_p: score += 1
+
+        # F5: LTD / assets decreased
+        if ta and ta_p:
+            if (ltd / ta) < (ltd_p / ta_p): score += 1
+
+        # F6: current ratio improved
+        if cl and cl_p:
+            if (ca / cl) > (ca_p / cl_p): score += 1
+
+        # F7: equity didn't grow (proxy for no equity issuance — imperfect)
+        if eq <= eq_p * 1.05: score += 1
+
+        # F8: gross margin improved
+        gm = (rev - cogs) / rev if rev else 0
+        gm_p = (rev_p - cogs_p) / rev_p if rev_p else 0
+        if gm > gm_p: score += 1
+
+        # F9: asset turnover improved
+        at_ = rev / ta if ta else 0
+        at_p = rev_p / ta_p if ta_p else 0
+        if at_ > at_p: score += 1
+
+        return score
+    except (TypeError, ZeroDivisionError):
+        return None
+
+
+# ── Going-concern textual classifier ─────────────────────────────────────────
+
+_GC_PHRASES = [
+    "substantial doubt about",
+    "ability to continue as a going concern",
+    "going concern qualification",
+    "raises substantial doubt",
+    "material uncertainty related to going concern",
+    "may not be able to continue as a going concern",
+]
+
+
+def going_concern_score(text: str) -> dict:
+    """Simple keyword-based going-concern classifier (Hedback 2025 + PCAOB AS 3105).
+
+    Counts occurrences of canonical going-concern trigger phrases in the
+    provided text (typically Item 1A risk factors + Item 7 MD&A + auditor's
+    report). Returns a dict with the count, a boolean "flagged", and the
+    phrases that hit.
+
+    This is a screening tool, not a verdict — the same phrases sometimes appear
+    as boilerplate "we believe we will be able to continue" denials. The score
+    is most informative when applied year-over-year in textdiff.
+    """
+    if not text:
+        return {"flagged": False, "phrase_count": 0, "hits": []}
+    text_lc = text.lower()
+    hits = [p for p in _GC_PHRASES if p in text_lc]
+    return {
+        "flagged": len(hits) > 0,
+        "phrase_count": sum(text_lc.count(p) for p in _GC_PHRASES),
+        "hits": hits,
+    }
+
+
 # ── Orchestration ────────────────────────────────────────────────────────────
 
 def _flag_year(y: YearlyScore) -> None:
@@ -294,6 +419,12 @@ def _flag_year(y: YearlyScore) -> None:
     if y.sloan_accruals is not None:
         if y.sloan_accruals > 0.10:
             y.flags.append("sloan_high_accruals")
+    pf = y.inputs.get("_piotroski_f_score") if y.inputs else None
+    if pf is not None:
+        if pf <= 2:
+            y.flags.append("piotroski_weak")
+        elif pf >= 8:
+            y.flags.append("piotroski_strong")
 
 
 def forensic_report(cik: int) -> ForensicReport:
@@ -312,6 +443,9 @@ def forensic_report(cik: int) -> ForensicReport:
         ys = YearlyScore(fiscal_year=y, inputs=curr)
         ys.altman_z = altman_z_score(curr)
         ys.sloan_accruals = sloan_accruals(curr)
+        pf = piotroski_f_score(curr, prev)
+        if pf is not None:
+            ys.inputs["_piotroski_f_score"] = pf
         if prev:
             ys.beneish_m = beneish_m_score(curr, prev)
         _flag_year(ys)
