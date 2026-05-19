@@ -146,6 +146,36 @@ def register(app: typer.Typer) -> None:
         typer.echo(f"Visualization saved to {out}")
 
     @app.command()
+    def textdiff(
+        cik: int = typer.Argument(..., help="Company CIK"),
+        form: str = typer.Option("10-K", "--form", help="Form type (10-K or 10-Q)"),
+        years: int = typer.Option(5, "--years", help="Number of filings to compare"),
+        threshold: float = typer.Option(0.85, "--threshold", help="Jaccard threshold to flag"),
+        output: Optional[str] = typer.Option(None, "--out", "-o", help="Save report JSON"),
+    ):
+        """Compute year-over-year text-diff scores for a company's 10-K or 10-Q.
+
+        Cohen-Malloy (2020, JoF) showed ~22% annualized alpha from this signal.
+        Flags sections where the prose has been substantively rewritten.
+
+        Examples:
+          econscope textdiff 1846510                    # Soho House 10-K diffs
+          econscope textdiff 320193 --form 10-Q --years 8   # Apple 10-Q diffs
+        """
+        from econscope.intel.textdiff import textdiff_report, summarize_textdiff
+
+        typer.echo(f"Pulling {form} filings for CIK {cik}...", err=True)
+        try:
+            report = textdiff_report(cik, form_type=form, years=years, similarity_threshold=threshold)
+        except Exception as e:
+            typer.echo(f"ERROR: {e}", err=True)
+            raise typer.Exit(1)
+        typer.echo(summarize_textdiff(report))
+        if output:
+            Path(output).write_text(report.to_json())
+            typer.echo(f"\nReport saved to {output}", err=True)
+
+    @app.command()
     def cache(
         action: str = typer.Argument("size", help="size or clear"),
     ):

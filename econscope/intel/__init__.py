@@ -22,7 +22,16 @@ from econscope.intel.forensic import (
     beneish_m_score,
     altman_z_score,
     sloan_accruals,
+    piotroski_f_score,
+    going_concern_score,
     ForensicReport,
+)
+from econscope.intel.textdiff import (
+    textdiff_report,
+    summarize_textdiff,
+    jaccard_similarity,
+    TextDiffReport,
+    SectionDiff,
 )
 
 __all__ = [
@@ -38,4 +47,9 @@ __all__ = [
     "altman_z_score",
     "sloan_accruals",
     "ForensicReport",
+    "textdiff_report",
+    "summarize_textdiff",
+    "jaccard_similarity",
+    "TextDiffReport",
+    "SectionDiff",
 ]
