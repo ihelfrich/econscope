@@ -380,5 +380,190 @@ def verify_keys():
     )
 
 
+# ── Cross-source commands ────────────────────────────────────────────────────
+
+@app.command(name="multi-pull")
+def multi_pull_cmd(
+    series: list[str] = typer.Argument(..., help="Series specs: source:series_id[@label] ..."),
+    start: Optional[str] = typer.Option(None, "--start", "-s"),
+    end: Optional[str] = typer.Option(None, "--end", "-e"),
+    fmt: str = typer.Option("table", "--format", "-f", help="Output format: table, csv, json"),
+    no_store: bool = typer.Option(False, "--no-store", help="Don't store in warehouse"),
+):
+    """Pull multiple series from different sources and align on date.
+
+    Examples:
+      econscope multi-pull fred:FEDFUNDS treasury:interest_rates -s 2020-01-01
+      econscope multi-pull fred:GDP@us_gdp worldbank:NY.GDP.MKTP.CD:GB@uk_gdp
+      econscope multi-pull eia:wti@oil fred:CPIAUCSL@cpi -f csv
+    """
+    from econscope.engine import multi_pull, SeriesSpec
+
+    specs = []
+    for s in series:
+        spec = SeriesSpec.parse(s)
+        spec.start = start
+        spec.end = end
+        specs.append(spec)
+
+    typer.echo(f"Pulling {len(specs)} series...", err=True)
+    panel = multi_pull(specs, store=not no_store)
+
+    if panel.errors:
+        for err in panel.errors:
+            typer.echo(f"  WARNING: {err}", err=True)
+
+    typer.echo(
+        f"Panel: {len(panel.columns)} series x {panel.count} dates",
+        err=True,
+    )
+
+    if fmt == "csv":
+        typer.echo(panel.to_csv())
+    elif fmt == "json":
+        typer.echo(panel.to_json())
+    else:
+        # Table format
+        header = f"{'date':>12}" + "".join(f"  {c[:20]:>20}" for c in panel.columns)
+        typer.echo(header)
+        typer.echo("-" * len(header))
+        for date in panel.dates[-50:]:  # Last 50 rows
+            row = panel.data.get(date, {})
+            vals = "".join(
+                f"  {row.get(c, ''):>20.4f}" if isinstance(row.get(c), (int, float))
+                else f"  {'':>20}"
+                for c in panel.columns
+            )
+            typer.echo(f"{date:>12}{vals}")
+        if panel.count > 50:
+            typer.echo(f"  ... ({panel.count - 50} earlier rows omitted)")
+
+
+@app.command()
+def correlate(
+    series: list[str] = typer.Argument(..., help="Series specs to correlate"),
+    start: Optional[str] = typer.Option(None, "--start", "-s"),
+    end: Optional[str] = typer.Option(None, "--end", "-e"),
+):
+    """Compute pairwise correlation between series from different sources.
+
+    Example:
+      econscope correlate fred:FEDFUNDS eia:wti fred:CPIAUCSL -s 2015-01-01
+    """
+    from econscope.engine import multi_pull, correlate as compute_corr, SeriesSpec, summary_stats
+
+    specs = [SeriesSpec.parse(s) for s in series]
+    for spec in specs:
+        spec.start = start
+        spec.end = end
+
+    typer.echo(f"Pulling {len(specs)} series for correlation...", err=True)
+    panel = multi_pull(specs, store=False)
+
+    if panel.errors:
+        for err in panel.errors:
+            typer.echo(f"  WARNING: {err}", err=True)
+
+    # Summary stats
+    stats = summary_stats(panel)
+    typer.echo(f"\n{'Series':<35} {'N':>6} {'Mean':>14} {'Std':>14} {'Min':>14} {'Max':>14}")
+    typer.echo("-" * 99)
+    for col, s in stats.items():
+        if s.get("count", 0) == 0:
+            typer.echo(f"{col[:34]:<35} {'0':>6}")
+            continue
+        typer.echo(
+            f"{col[:34]:<35} {s['count']:>6} {s['mean']:>14,.4f} {s['std']:>14,.4f} "
+            f"{s['min']:>14,.4f} {s['max']:>14,.4f}"
+        )
+
+    # Correlation matrix
+    corrs = compute_corr(panel)
+    if corrs:
+        typer.echo(f"\nCorrelation matrix ({panel.count} dates, inner-joined):")
+        typer.echo("-" * 60)
+        for (a, b), r in sorted(corrs.items()):
+            import math
+            r_str = f"{r:+.4f}" if not math.isnan(r) else "   NaN"
+            typer.echo(f"  {a[:25]:<25}  x  {b[:25]:<25}  r = {r_str}")
+
+
+@app.command(name="entity-search")
+def entity_search_cmd(
+    query: str = typer.Argument(..., help="Entity name to search"),
+    sources_opt: Optional[str] = typer.Option(None, "--sources", help="Comma-separated source IDs"),
+    limit: int = typer.Option(5, "--limit", "-n"),
+):
+    """Search for an entity across multiple sources simultaneously.
+
+    Example:
+      econscope entity-search "JPMorgan Chase"
+      econscope entity-search "Gazprom" --sources opensanctions,sec,courtlistener
+    """
+    from econscope.engine import entity_search
+
+    src_list = sources_opt.split(",") if sources_opt else None
+    typer.echo(f"Searching for '{query}' across sources...", err=True)
+
+    results = entity_search(query, sources=src_list, limit=limit)
+
+    for source_id, hits in results.items():
+        typer.echo(f"\n  {source_id.upper()}")
+        typer.echo(f"  {'─' * 50}")
+        if not hits:
+            typer.echo("    (no results)")
+            continue
+        for hit in hits:
+            if "error" in hit:
+                typer.echo(f"    ERROR: {hit['error']}")
+            else:
+                title = hit.get("title", "")[:55]
+                notes = hit.get("notes", "")[:30]
+                typer.echo(f"    {hit['series_id'][:30]:<30}  {title:<55}  {notes}")
+
+
+@app.command(name="warehouse-join")
+def warehouse_join_cmd(
+    series: list[str] = typer.Argument(..., help="source:series_id pairs already in warehouse"),
+    start: Optional[str] = typer.Option(None, "--start", "-s"),
+    end: Optional[str] = typer.Option(None, "--end", "-e"),
+    fill: str = typer.Option("none", "--fill", help="Missing value fill: none, forward"),
+    fmt: str = typer.Option("table", "--format", "-f", help="Output format: table, csv, json"),
+):
+    """Join stored warehouse series on date.
+
+    Example:
+      econscope warehouse-join fred:FEDFUNDS treasury:interest_rates --fill forward
+    """
+    from econscope.engine import warehouse_join
+
+    pairs = []
+    for s in series:
+        parts = s.split(":", 1)
+        if len(parts) < 2:
+            typer.echo(f"Invalid format: '{s}'. Use source:series_id")
+            raise typer.Exit(1)
+        pairs.append((parts[0], parts[1]))
+
+    panel = warehouse_join(pairs, start=start, end=end, fill_method=fill)
+
+    if fmt == "csv":
+        typer.echo(panel.to_csv())
+    elif fmt == "json":
+        typer.echo(panel.to_json())
+    else:
+        header = f"{'date':>12}" + "".join(f"  {c[:20]:>20}" for c in panel.columns)
+        typer.echo(header)
+        typer.echo("-" * len(header))
+        for date in panel.dates[-50:]:
+            row = panel.data.get(date, {})
+            vals = "".join(
+                f"  {row.get(c, ''):>20.4f}" if isinstance(row.get(c), (int, float))
+                else f"  {'':>20}"
+                for c in panel.columns
+            )
+            typer.echo(f"{date:>12}{vals}")
+
+
 if __name__ == "__main__":
     app()
