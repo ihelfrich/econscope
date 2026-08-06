@@ -15,7 +15,6 @@ from __future__ import annotations
 
 import json
 from typing import List, Optional
-from urllib.request import urlopen
 from urllib.parse import urlencode, quote
 
 from econscope.adapters.base import BaseAdapter, PullResult, SeriesMetadata
@@ -75,7 +74,7 @@ class WorldBankAdapter(BaseAdapter):
         params["format"] = "json"
         params["per_page"] = params.get("per_page", "10000")
         url = f"{self.BASE}/{endpoint}?{urlencode(params)}"
-        raw = urlopen(url).read()
+        raw = self._http_get(url)
         data = json.loads(raw)
         return data, raw
 

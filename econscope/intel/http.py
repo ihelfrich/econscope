@@ -24,6 +24,7 @@ import hashlib
 import json
 import os
 import random
+import ssl
 import time
 import urllib.error
 import urllib.parse
@@ -32,9 +33,15 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Optional
 
+import certifi
+
 # ── Configuration ────────────────────────────────────────────────────────────
 
 USER_AGENT = "ECONSCOPE-research/0.2 (ian.helfrich@barcelonagse.eu)"
+
+# Some upstreams (treasury.gov, usaspending.gov) use cert chains the system
+# Python doesn't always trust; certifi's bundle covers them.
+_SSL_CONTEXT = ssl.create_default_context(cafile=certifi.where())
 DEFAULT_TIMEOUT = 45  # seconds
 DEFAULT_MAX_RETRIES = 5
 DEFAULT_INITIAL_BACKOFF = 1.5  # seconds
@@ -135,6 +142,7 @@ def fetch(
     url: str,
     *,
     headers: Optional[dict] = None,
+    data: Optional[bytes] = None,
     timeout: float = DEFAULT_TIMEOUT,
     max_retries: int = DEFAULT_MAX_RETRIES,
     initial_backoff: float = DEFAULT_INITIAL_BACKOFF,
@@ -151,6 +159,8 @@ def fetch(
         The URL to fetch.
     headers : dict, optional
         Additional request headers. User-Agent is added automatically.
+    data : bytes, optional
+        Request body. When set, the request is a POST and the cache is bypassed.
     timeout : float
         Per-attempt socket timeout in seconds.
     max_retries : int
@@ -182,7 +192,9 @@ def fetch(
     if headers:
         req_headers.update(headers)
 
-    # Cache read
+    # Cache read (idempotent GETs only)
+    if data is not None:
+        cache_max_age = None
     cache_k = _cache_key(url, req_headers)
     if not cache_force_refresh and cache_max_age is not None:
         cached = _cache_read(cache_k, cache_max_age)
@@ -197,8 +209,8 @@ def fetch(
 
     for attempt in range(1, max_retries + 1):
         try:
-            req = urllib.request.Request(url, headers=req_headers)
-            with urllib.request.urlopen(req, timeout=timeout) as resp:
+            req = urllib.request.Request(url, data=data, headers=req_headers)
+            with urllib.request.urlopen(req, timeout=timeout, context=_SSL_CONTEXT) as resp:
                 raw = resp.read()
                 # Auto-decompress gzip
                 if resp.headers.get("Content-Encoding") == "gzip":

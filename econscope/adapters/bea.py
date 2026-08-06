@@ -15,7 +15,6 @@ from __future__ import annotations
 
 import json
 from typing import List, Optional
-from urllib.request import urlopen
 from urllib.parse import urlencode
 
 from econscope.config import require_key
@@ -64,7 +63,7 @@ class BEAAdapter(BaseAdapter):
         params["UserID"] = self.api_key
         params["ResultFormat"] = "JSON"
         url = f"{self.BASE}?{urlencode(params)}"
-        raw = urlopen(url).read()
+        raw = self._http_get(url)
         data = json.loads(raw)
 
         # Check for API errors

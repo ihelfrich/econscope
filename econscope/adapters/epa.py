@@ -12,7 +12,6 @@ from __future__ import annotations
 
 import json
 from typing import Optional
-from urllib.request import urlopen
 from urllib.parse import quote
 
 from econscope.adapters.base import BaseAdapter, PullResult, SeriesMetadata
@@ -53,7 +52,7 @@ class EPAAdapter(BaseAdapter):
 
     def _get(self, path: str) -> tuple[list | dict, bytes]:
         url = f"{self.BASE}/{path}/JSON"
-        raw = urlopen(url).read()
+        raw = self._http_get(url)
         return json.loads(raw), raw
 
     def pull_series(

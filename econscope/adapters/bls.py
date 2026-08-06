@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import json
 from typing import List, Optional
-from urllib.request import urlopen, Request
 
 from econscope.config import require_key
 from econscope.adapters.base import BaseAdapter, PullResult, SeriesMetadata
@@ -62,13 +61,9 @@ class BLSAdapter(BaseAdapter):
             payload["catalog"] = True
 
         body = json.dumps(payload).encode()
-        req = Request(
-            self.BASE,
-            data=body,
-            headers={"Content-Type": "application/json"},
-            method="POST",
+        raw = self._http_post(
+            self.BASE, body, headers={"Content-Type": "application/json"}
         )
-        raw = urlopen(req).read()
         return json.loads(raw), raw
 
     def pull_series(

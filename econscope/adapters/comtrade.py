@@ -14,7 +14,6 @@ from __future__ import annotations
 
 import json
 from typing import List, Optional
-from urllib.request import urlopen, Request
 from urllib.parse import urlencode
 
 from econscope.config import get_key
@@ -78,9 +77,7 @@ class ComtradeAdapter(BaseAdapter):
         url = f"{self.BASE}/{params.pop('reporter', '842')}/{params.pop('year', 'recent')}"
         if params:
             url += f"?{urlencode(params)}"
-        req = Request(url)
-        req.add_header("Ocp-Apim-Subscription-Key", self.api_key)
-        raw = urlopen(req).read()
+        raw = self._http_get(url, headers={"Ocp-Apim-Subscription-Key": self.api_key})
         return json.loads(raw), raw
 
     def pull_series(

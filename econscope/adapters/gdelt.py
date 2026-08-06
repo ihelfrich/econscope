@@ -13,7 +13,6 @@ from __future__ import annotations
 
 import json
 from typing import Optional
-from urllib.request import urlopen, Request
 from urllib.parse import urlencode, quote
 
 from econscope.adapters.base import BaseAdapter, PullResult, SeriesMetadata
@@ -96,17 +95,13 @@ class GDELTAdapter(BaseAdapter):
     def _get_doc(self, **params) -> tuple[dict | list, bytes]:
         params["format"] = "json"
         url = f"{self.DOC_API}?{urlencode(params)}"
-        req = Request(url)
-        req.add_header("User-Agent", "econscope/1.0")
-        raw = urlopen(req, timeout=60).read()
+        raw = self._http_get(url, timeout=60)
         return json.loads(raw), raw
 
     def _get_geo(self, **params) -> tuple[dict | list, bytes]:
         params["format"] = "GeoJSON"
         url = f"{self.GEO_API}?{urlencode(params)}"
-        req = Request(url)
-        req.add_header("User-Agent", "econscope/1.0")
-        raw = urlopen(req, timeout=60).read()
+        raw = self._http_get(url, timeout=60)
         return json.loads(raw), raw
 
     def pull_series(

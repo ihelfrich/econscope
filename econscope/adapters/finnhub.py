@@ -14,7 +14,6 @@ from __future__ import annotations
 import json
 from datetime import datetime, date, timedelta
 from typing import List, Optional
-from urllib.request import urlopen, Request
 from urllib.parse import urlencode
 
 from econscope.config import require_key
@@ -35,7 +34,7 @@ class FinnhubAdapter(BaseAdapter):
     def _get(self, endpoint: str, **params) -> tuple[dict | list, bytes]:
         params["token"] = self.api_key
         url = f"{self.BASE}/{endpoint}?{urlencode(params)}"
-        raw = urlopen(url).read()
+        raw = self._http_get(url)
         return json.loads(raw), raw
 
     def pull_series(

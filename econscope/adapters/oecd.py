@@ -11,7 +11,6 @@ from __future__ import annotations
 
 import json
 from typing import Optional
-from urllib.request import urlopen, Request
 from urllib.parse import urlencode, quote
 
 from econscope.adapters.base import BaseAdapter, PullResult, SeriesMetadata
@@ -88,10 +87,8 @@ class OECDAdapter(BaseAdapter):
 
     def _get(self, path: str) -> tuple[dict, bytes]:
         url = f"{self.BASE}/{path}"
-        req = Request(url)
-        req.add_header("User-Agent", "econscope/1.0")
-        req.add_header("Accept", "application/vnd.sdmx.data+json;version=2.0.0")
-        raw = urlopen(req, timeout=60).read()
+        headers = {"Accept": "application/vnd.sdmx.data+json;version=2.0.0"}
+        raw = self._http_get(url, headers=headers, timeout=60)
         return json.loads(raw), raw
 
     def _resolve_country(self, code: str) -> str:

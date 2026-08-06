@@ -11,7 +11,6 @@ from __future__ import annotations
 
 import json
 from typing import Optional
-from urllib.request import urlopen, Request
 from urllib.parse import urlencode, quote
 
 from econscope.adapters.base import BaseAdapter, PullResult, SeriesMetadata
@@ -59,8 +58,6 @@ WELL_KNOWN = {
     "CVX": "0000093410",
 }
 
-USER_AGENT = "econscope/1.0 (ianthelfrich@gmail.com)"
-
 
 class SECEdgarAdapter(BaseAdapter):
     source_id = "sec"
@@ -72,10 +69,7 @@ class SECEdgarAdapter(BaseAdapter):
         pass
 
     def _get(self, url: str) -> tuple[dict | list, bytes]:
-        req = Request(url)
-        req.add_header("User-Agent", USER_AGENT)
-        req.add_header("Accept", "application/json")
-        raw = urlopen(req, timeout=30).read()
+        raw = self._http_get(url, headers={"Accept": "application/json"}, timeout=30)
         return json.loads(raw), raw
 
     def pull_series(

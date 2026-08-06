@@ -10,7 +10,6 @@ from __future__ import annotations
 import json
 from typing import Optional
 from datetime import datetime
-from urllib.request import urlopen
 from urllib.parse import urlencode
 
 from econscope.config import get_key
@@ -48,11 +47,7 @@ class CoinGeckoAdapter(BaseAdapter):
         url = f"{self.BASE}/{endpoint}"
         if params:
             url += f"?{urlencode(params)}"
-        from urllib.request import Request
-        req = Request(url)
-        req.add_header("User-Agent", "econscope/1.0 (economic research platform)")
-        req.add_header("Accept", "application/json")
-        raw = urlopen(req).read()
+        raw = self._http_get(url, headers={"Accept": "application/json"})
         return json.loads(raw), raw
 
     def pull_series(

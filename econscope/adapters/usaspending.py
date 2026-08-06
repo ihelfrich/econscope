@@ -10,21 +10,10 @@ CFDA programs, NAICS-coded procurement.
 from __future__ import annotations
 
 import json
-import ssl
 from typing import Optional
-from urllib.request import urlopen, Request
 from urllib.parse import urlencode
 
 from econscope.adapters.base import BaseAdapter, PullResult, SeriesMetadata
-
-# USASpending uses a certificate chain that Python 3.9 doesn't trust by default
-_SSL_CTX = ssl.create_default_context()
-try:
-    import certifi
-    _SSL_CTX.load_verify_locations(certifi.where())
-except ImportError:
-    _SSL_CTX.check_hostname = False
-    _SSL_CTX.verify_mode = ssl.CERT_NONE
 
 
 # Pre-built spending queries
@@ -83,20 +72,14 @@ class USASpendingAdapter(BaseAdapter):
 
     def _get(self, endpoint: str) -> tuple[dict, bytes]:
         url = f"{self.BASE}/{endpoint}"
-        req = Request(url)
-        req.add_header("User-Agent", "econscope/1.0")
-        req.add_header("Accept", "application/json")
-        raw = urlopen(req, timeout=30, context=_SSL_CTX).read()
+        raw = self._http_get(url, headers={"Accept": "application/json"}, timeout=30)
         return json.loads(raw), raw
 
     def _post(self, endpoint: str, body: dict) -> tuple[dict, bytes]:
         url = f"{self.BASE}/{endpoint}"
         payload = json.dumps(body).encode("utf-8")
-        req = Request(url, data=payload, method="POST")
-        req.add_header("Content-Type", "application/json")
-        req.add_header("User-Agent", "econscope/1.0")
-        req.add_header("Accept", "application/json")
-        raw = urlopen(req, timeout=30, context=_SSL_CTX).read()
+        headers = {"Content-Type": "application/json", "Accept": "application/json"}
+        raw = self._http_post(url, payload, headers=headers, timeout=30)
         return json.loads(raw), raw
 
     def pull_series(

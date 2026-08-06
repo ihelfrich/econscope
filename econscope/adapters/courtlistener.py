@@ -11,7 +11,6 @@ from __future__ import annotations
 
 import json
 from typing import Optional
-from urllib.request import urlopen, Request
 from urllib.parse import urlencode, quote
 
 from econscope.config import get_key
@@ -44,12 +43,10 @@ class CourtListenerAdapter(BaseAdapter):
         url = f"{self.BASE}/{endpoint}/"
         if params:
             url += f"?{urlencode(params)}"
-        req = Request(url)
-        req.add_header("User-Agent", "econscope/1.0 (economic research platform)")
-        req.add_header("Accept", "application/json")
+        headers = {"Accept": "application/json"}
         if self.api_key:
-            req.add_header("Authorization", f"Token {self.api_key}")
-        raw = urlopen(req, timeout=30).read()
+            headers["Authorization"] = f"Token {self.api_key}"
+        raw = self._http_get(url, headers=headers, timeout=30)
         return json.loads(raw), raw
 
     def _search(self, endpoint: str, **params) -> tuple[dict, bytes]:
@@ -58,12 +55,10 @@ class CourtListenerAdapter(BaseAdapter):
         params["type"] = endpoint
         if params:
             url += f"?{urlencode(params)}"
-        req = Request(url)
-        req.add_header("User-Agent", "econscope/1.0")
-        req.add_header("Accept", "application/json")
+        headers = {"Accept": "application/json"}
         if self.api_key:
-            req.add_header("Authorization", f"Token {self.api_key}")
-        raw = urlopen(req, timeout=30).read()
+            headers["Authorization"] = f"Token {self.api_key}"
+        raw = self._http_get(url, headers=headers, timeout=30)
         return json.loads(raw), raw
 
     def pull_series(

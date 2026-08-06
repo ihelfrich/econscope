@@ -1,7 +1,6 @@
 """FRED adapter — Federal Reserve Economic Data (800K+ time series)."""
 
 import json
-from urllib.request import urlopen
 from urllib.parse import urlencode
 
 from econscope.config import require_key
@@ -23,7 +22,7 @@ class FREDAdapter(BaseAdapter):
         params["api_key"] = self.api_key
         params["file_type"] = "json"
         url = f"{self.BASE}/{endpoint}?{urlencode(params)}"
-        raw = urlopen(url).read()
+        raw = self._http_get(url)
         return json.loads(raw), raw
 
     def pull_series(

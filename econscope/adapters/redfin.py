@@ -12,7 +12,6 @@ import csv
 import gzip
 import io
 from typing import Optional
-from urllib.request import urlopen
 
 from econscope.adapters.base import BaseAdapter, PullResult, SeriesMetadata
 
@@ -76,8 +75,12 @@ class RedfinAdapter(BaseAdapter):
         title = rf["title"]
 
         try:
-            raw = urlopen(rf["url"]).read()
-            text = gzip.decompress(raw).decode("utf-8")
+            raw = self._http_get(rf["url"])
+            try:
+                text = gzip.decompress(raw).decode("utf-8")
+            except (OSError, ValueError):
+                # Already decompressed in transit (Content-Encoding: gzip)
+                text = raw.decode("utf-8")
         except Exception as e:
             return PullResult(
                 source=self.source_id, series_id=series_id,
@@ -166,7 +169,10 @@ class RedfinAdapter(BaseAdapter):
     def verify_key(self) -> tuple[bool, str]:
         try:
             # Just check the national file is accessible (HEAD-like: read first bytes)
-            raw = urlopen(REDFIN_FILES["national"]["url"]).read(1024)
+            raw = self._http_get(
+                REDFIN_FILES["national"]["url"],
+                headers={"Range": "bytes=0-1023"},
+            )
             if raw:
                 return True, "Redfin: S3 data accessible (no key needed)"
             return False, "Redfin: no data returned"

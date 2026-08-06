@@ -608,7 +608,7 @@ Maddison Project, SIPRI, ILO.
 | Component | Technology | Rationale |
 |---|---|---|
 | CLI framework | Python (click or typer) | Most adapters are Python; some shell out to Go binaries |
-| API adapters | Python (httpx async) | Async HTTP for parallel streams within rate limits |
+| API adapters | Python (urllib via shared `intel/http` layer) | Retry/backoff, timeouts, shared UA, per-source rate limiting |
 | Rate governor | Python (asyncio + token bucket) | Fine-grained per-source pacing |
 | Job scheduler | SQLite + Python | Persistent job queue, survives restarts |
 | Data warehouse | DuckDB | Columnar, fast analytical queries, single-file, no server |

@@ -11,7 +11,6 @@ from __future__ import annotations
 
 import xml.etree.ElementTree as ET
 from typing import Optional
-from urllib.request import urlopen
 from urllib.parse import quote
 
 from econscope.adapters.base import BaseAdapter, PullResult, SeriesMetadata
@@ -84,7 +83,7 @@ class BISAdapter(BaseAdapter):
 
     def _get_xml(self, path: str) -> tuple[ET.Element, bytes]:
         url = f"{self.BASE}/{path}"
-        raw = urlopen(url).read()
+        raw = self._http_get(url)
         root = ET.fromstring(raw)
         return root, raw
 

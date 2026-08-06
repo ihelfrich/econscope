@@ -11,7 +11,6 @@ from __future__ import annotations
 
 import json
 from typing import Optional
-from urllib.request import urlopen, Request
 
 from econscope.adapters.base import BaseAdapter, PullResult, SeriesMetadata
 
@@ -72,9 +71,8 @@ class IMFAdapter(BaseAdapter):
 
     def _get(self, path: str) -> tuple[dict, bytes]:
         url = f"{self.BASE}/{path}"
-        req = Request(url)
-        req.add_header("Accept", "application/vnd.sdmx.data+json;version=2.0.0")
-        raw = urlopen(req).read()
+        headers = {"Accept": "application/vnd.sdmx.data+json;version=2.0.0"}
+        raw = self._http_get(url, headers=headers)
         return json.loads(raw), raw
 
     def pull_series(

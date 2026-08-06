@@ -11,7 +11,6 @@ from __future__ import annotations
 
 import json
 from typing import Optional
-from urllib.request import urlopen, Request
 from urllib.parse import urlencode, quote
 
 from econscope.adapters.base import BaseAdapter, PullResult, SeriesMetadata
@@ -85,10 +84,7 @@ class EurostatAdapter(BaseAdapter):
         url = f"{self.BASE}/{quote(dataset_code)}"
         if params:
             url += f"?{urlencode(params, doseq=True)}"
-        req = Request(url)
-        req.add_header("User-Agent", "econscope/1.0")
-        req.add_header("Accept", "application/json")
-        raw = urlopen(req, timeout=60).read()
+        raw = self._http_get(url, headers={"Accept": "application/json"}, timeout=60)
         return json.loads(raw), raw
 
     def pull_series(
@@ -239,9 +235,7 @@ class EurostatAdapter(BaseAdapter):
         if len(results) < limit:
             try:
                 url = f"https://ec.europa.eu/eurostat/api/dissemination/catalogue/toc?lang=en"
-                req = Request(url)
-                req.add_header("User-Agent", "econscope/1.0")
-                raw = urlopen(req, timeout=15).read()
+                raw = self._http_get(url, timeout=15)
                 toc = json.loads(raw)
                 seen = {r.series_id for r in results}
                 for item in toc.get("items", [])[:500]:

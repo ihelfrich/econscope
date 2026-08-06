@@ -12,7 +12,6 @@ from __future__ import annotations
 
 import json
 from typing import Optional
-from urllib.request import urlopen, Request
 from urllib.parse import urlencode
 
 from econscope.config import get_key
@@ -64,9 +63,7 @@ class NOAAAdapter(BaseAdapter):
 
     def _get(self, **params) -> tuple[list | dict, bytes]:
         url = f"{self.BASE}?{urlencode(params)}"
-        req = Request(url)
-        req.add_header("Accept", "application/json")
-        raw = urlopen(req).read()
+        raw = self._http_get(url, headers={"Accept": "application/json"})
         return json.loads(raw), raw
 
     def pull_series(

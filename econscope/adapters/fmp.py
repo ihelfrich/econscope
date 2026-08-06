@@ -13,7 +13,6 @@ from __future__ import annotations
 
 import json
 from typing import List, Optional
-from urllib.request import urlopen
 from urllib.parse import urlencode
 
 from econscope.config import require_key
@@ -34,7 +33,7 @@ class FMPAdapter(BaseAdapter):
     def _get(self, endpoint: str, **params) -> tuple[dict | list, bytes]:
         params["apikey"] = self.api_key
         url = f"{self.BASE}/{endpoint}?{urlencode(params)}"
-        raw = urlopen(url).read()
+        raw = self._http_get(url)
         return json.loads(raw), raw
 
     def pull_series(

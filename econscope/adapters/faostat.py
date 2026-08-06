@@ -10,7 +10,6 @@ from __future__ import annotations
 
 import json
 from typing import Optional
-from urllib.request import urlopen
 from urllib.parse import urlencode
 
 from econscope.adapters.base import BaseAdapter, PullResult, SeriesMetadata
@@ -77,7 +76,7 @@ class FAOAdapter(BaseAdapter):
         url = f"{self.BASE}/{domain}"
         if params:
             url += f"?{urlencode(params, doseq=True)}"
-        raw = urlopen(url).read()
+        raw = self._http_get(url)
         return json.loads(raw), raw
 
     def pull_series(

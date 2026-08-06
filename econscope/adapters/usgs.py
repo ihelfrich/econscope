@@ -11,7 +11,6 @@ from __future__ import annotations
 
 import json
 from typing import Optional
-from urllib.request import urlopen, Request
 from urllib.parse import urlencode
 
 from econscope.adapters.base import BaseAdapter, PullResult, SeriesMetadata
@@ -124,9 +123,7 @@ class USGSAdapter(BaseAdapter):
 
         try:
             url = f"{self.BASE}?{urlencode(params)}"
-            req = Request(url)
-            req.add_header("User-Agent", "econscope/1.0")
-            raw = urlopen(req, timeout=30).read()
+            raw = self._http_get(url, timeout=30)
             data = json.loads(raw)
         except Exception as e:
             return PullResult(
