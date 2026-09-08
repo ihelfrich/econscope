@@ -380,6 +380,29 @@ def verify_keys():
     )
 
 
+@app.command(name="build-forensic-corpus")
+def build_forensic_corpus_cmd(
+    output: Optional[str] = typer.Option(
+        None, "--output", "-o",
+        help="Stable corpus directory (defaults to data/corpora/forensic-economics)",
+    ),
+):
+    """Download current forensic-economics facts and emit a Cueline reference deck."""
+    from pathlib import Path
+    from econscope.corpus.forensic_economics import build_current_corpus
+
+    result = build_current_corpus(root=Path(output).expanduser() if output else None)
+    typer.echo(f"Facts: {result.fact_count}")
+    typer.echo(f"Cueline deck: {result.deck_path}")
+    typer.echo(f"Readable facts: {result.markdown_path}")
+    typer.echo(f"Manifest: {result.manifest_path}")
+    typer.echo(f"Snapshot: {result.snapshot_dir}")
+    if result.errors:
+        typer.echo(f"Warnings: {len(result.errors)}", err=True)
+        for warning in result.errors:
+            typer.echo(f"  - {warning}", err=True)
+
+
 # ── Cross-source commands ────────────────────────────────────────────────────
 
 @app.command(name="multi-pull")

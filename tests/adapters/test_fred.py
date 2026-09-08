@@ -6,6 +6,32 @@ import pytest
 from econscope.adapters.fred import FREDAdapter
 
 
+def test_fred_uses_public_graph_csv_when_no_api_key(monkeypatch):
+    monkeypatch.delenv("FRED_API_KEY", raising=False)
+    adapter = FREDAdapter()
+    seen = {}
+
+    def fake_get(url, headers=None, timeout=None):
+        seen["url"] = url
+        return b"observation_date,PCEPI\n2025-07-01,126.0\n2026-07-01,130.2\n"
+
+    monkeypatch.setattr(adapter, "_http_get", fake_get)
+    result = adapter.pull_series("PCEPI", start="2025-01-01", end="2026-12-31")
+
+    assert result.ok
+    assert result.count == 2
+    assert result.observations[-1] == {"date": "2026-07-01", "value": 130.2}
+    assert "fredgraph.csv" in seen["url"]
+    assert "cosd=2025-01-01" in seen["url"]
+    assert "coed=2026-12-31" in seen["url"]
+
+
+def test_fred_search_without_key_uses_curated_public_series(monkeypatch):
+    monkeypatch.delenv("FRED_API_KEY", raising=False)
+    results = FREDAdapter().search("personal consumption")
+    assert any(result.series_id == "PCEPI" for result in results)
+
+
 @pytest.fixture
 def fred(has_fred_key):
     return FREDAdapter()

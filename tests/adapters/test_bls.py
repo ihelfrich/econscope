@@ -6,6 +6,57 @@ import pytest
 from econscope.adapters.bls import BLSAdapter, COMMON_SERIES
 
 
+def test_bls_can_use_the_public_unregistered_signature(monkeypatch):
+    """BLS v1-compatible requests are public; a key only unlocks v2 extras."""
+    monkeypatch.delenv("BLS_API_KEY", raising=False)
+    adapter = BLSAdapter()
+    captured = {}
+
+    def fake_post(url, data, headers=None, timeout=None):
+        import json
+        captured.update(json.loads(data))
+        return json.dumps({
+            "status": "REQUEST_SUCCEEDED",
+            "Results": {"series": [{
+                "seriesID": "LNS14000000",
+                "data": [{"year": "2026", "period": "M07", "value": "4.2"}],
+            }]},
+        }).encode()
+
+    monkeypatch.setattr(adapter, "_http_post", fake_post)
+    result = adapter.pull_series("LNS14000000", start="2026-01-01", end="2026-12-31")
+
+    assert result.ok
+    assert result.observations == [{"date": "2026-07-01", "value": 4.2}]
+    assert "registrationkey" not in captured
+    assert "catalog" not in captured
+    assert result.metadata.title == "Unemployment Rate"
+
+
+def test_bls_registered_signature_keeps_catalog_metadata(monkeypatch):
+    monkeypatch.setenv("BLS_API_KEY", "test-registration-key")
+    adapter = BLSAdapter()
+    captured = {}
+
+    def fake_post(url, data, headers=None, timeout=None):
+        import json
+        captured.update(json.loads(data))
+        return json.dumps({
+            "status": "REQUEST_SUCCEEDED",
+            "Results": {"series": [{
+                "seriesID": "LNS14000000",
+                "catalog": {"series_title": "Unemployment Rate"},
+                "data": [],
+            }]},
+        }).encode()
+
+    monkeypatch.setattr(adapter, "_http_post", fake_post)
+    adapter.pull_series("LNS14000000", start="2026-01-01", end="2026-12-31")
+
+    assert captured["registrationkey"] == "test-registration-key"
+    assert captured["catalog"] is True
+
+
 @pytest.fixture
 def bls(has_bls_key):
     return BLSAdapter()

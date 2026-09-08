@@ -1,10 +1,24 @@
 """FRED adapter — Federal Reserve Economic Data (800K+ time series)."""
 
+import csv
+import io
 import json
 from urllib.parse import urlencode
 
-from econscope.config import require_key
+from econscope.config import get_key
 from econscope.adapters.base import BaseAdapter, PullResult, SeriesMetadata
+
+
+COMMON_SERIES = {
+    "A191RL1Q225SBEA": "Real Gross Domestic Product, percent change from preceding period",
+    "PCEPI": "Personal Consumption Expenditures Price Index",
+    "PCEPILFE": "Personal Consumption Expenditures Excluding Food and Energy Price Index",
+    "DSPIC96": "Real Disposable Personal Income",
+    "PSAVERT": "Personal Saving Rate",
+    "FEDFUNDS": "Federal Funds Effective Rate",
+    "UNRATE": "Unemployment Rate",
+    "GDPC1": "Real Gross Domestic Product",
+}
 
 
 class FREDAdapter(BaseAdapter):
@@ -14,9 +28,10 @@ class FREDAdapter(BaseAdapter):
     requests_per_minute = 120
 
     BASE = "https://api.stlouisfed.org/fred"
+    GRAPH_CSV = "https://fred.stlouisfed.org/graph/fredgraph.csv"
 
     def __init__(self):
-        self.api_key = require_key(self.key_env_var)
+        self.api_key = get_key(self.key_env_var)
 
     def _get(self, endpoint: str, **params) -> tuple[dict, bytes]:
         params["api_key"] = self.api_key
@@ -28,6 +43,9 @@ class FREDAdapter(BaseAdapter):
     def pull_series(
         self, series_id: str, start: str = None, end: str = None
     ) -> PullResult:
+        if not self.api_key:
+            return self._pull_graph_csv(series_id, start=start, end=end)
+
         try:
             meta = self.get_metadata(series_id)
         except Exception as e:
@@ -72,7 +90,61 @@ class FREDAdapter(BaseAdapter):
             raw_bytes=raw,
         )
 
+    def _pull_graph_csv(
+        self, series_id: str, start: str = None, end: str = None
+    ) -> PullResult:
+        """Use FRED's public graph CSV export when an API key is unavailable."""
+        params = {"id": series_id}
+        if start:
+            params["cosd"] = start
+        if end:
+            params["coed"] = end
+        url = f"{self.GRAPH_CSV}?{urlencode(params)}"
+        try:
+            raw = self._http_get(url)
+            text = raw.decode("utf-8-sig")
+            reader = csv.DictReader(io.StringIO(text))
+            observations = []
+            for row in reader:
+                date = row.get("observation_date") or row.get("DATE") or row.get("date")
+                value = row.get(series_id)
+                if not date or value in (None, "", "."):
+                    continue
+                observations.append({"date": date, "value": float(value)})
+            if not observations:
+                raise ValueError("FRED graph export returned no observations")
+        except Exception as e:
+            return PullResult(
+                source=self.source_id,
+                series_id=series_id,
+                metadata=SeriesMetadata(source=self.source_id, series_id=series_id),
+                error=str(e),
+            )
+
+        observations.sort(key=lambda item: item["date"])
+        return PullResult(
+            source=self.source_id,
+            series_id=series_id,
+            metadata=SeriesMetadata(
+                source=self.source_id,
+                series_id=series_id,
+                title=COMMON_SERIES.get(series_id, series_id),
+                observation_start=observations[0]["date"],
+                observation_end=observations[-1]["date"],
+                notes="Public FRED graph CSV export; API metadata requires a FRED key.",
+            ),
+            observations=observations,
+            raw_bytes=raw,
+        )
+
     def search(self, query: str, limit: int = 20) -> list[SeriesMetadata]:
+        if not self.api_key:
+            terms = query.lower().split()
+            return [
+                SeriesMetadata(source=self.source_id, series_id=sid, title=title)
+                for sid, title in COMMON_SERIES.items()
+                if all(term in f"{sid} {title}".lower() for term in terms)
+            ][:limit]
         data, _ = self._get(
             "series/search",
             search_text=query,
@@ -85,6 +157,13 @@ class FREDAdapter(BaseAdapter):
         return results
 
     def get_metadata(self, series_id: str) -> SeriesMetadata:
+        if not self.api_key:
+            return SeriesMetadata(
+                source=self.source_id,
+                series_id=series_id,
+                title=COMMON_SERIES.get(series_id, series_id),
+                notes="Public FRED graph CSV export; API metadata requires a FRED key.",
+            )
         data, _ = self._get("series", series_id=series_id)
         series_list = data.get("seriess", [])
         if not series_list:

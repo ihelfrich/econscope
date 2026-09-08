@@ -1,7 +1,16 @@
 """CourtListener adapter — federal court opinions, PACER data, judges, oral arguments.
 
 API docs: https://www.courtlistener.com/api/rest/v4/
-Key required (free). Rate limit: 5,000 requests/hour authenticated.
+Key required (free).
+
+Rate limits, verified against the published docs on 2026-08-28 and against the
+live API which enforces them: authenticated users get **5 requests per minute,
+50 per hour, 125 per day**. This adapter previously documented "5,000
+requests/hour" and set requests_per_minute = 60 — twelve times the real
+per-minute ceiling and forty times the hourly one. A research pull would spend
+the entire daily quota in about two minutes and then 429 for the rest of the
+day, with a Retry-After in the thousands of seconds. The daily quota is the
+binding constraint: budget queries, and let the cache serve repeats.
 
 Covers: SCOTUS, circuit courts, district courts, bankruptcy courts, state courts.
 Full opinion text, citation networks, judge profiles, oral argument audio.
@@ -32,7 +41,15 @@ class CourtListenerAdapter(BaseAdapter):
     source_id = "courtlistener"
     source_name = "CourtListener"
     key_env_var = "COURTLISTENER_API_TOKEN"
-    requests_per_minute = 60  # 5K/hour ≈ 83/min, stay conservative
+
+    # Sit just under each published ceiling: tripping the throttle costs a
+    # Retry-After measured in thousands of seconds, so the margin is cheap.
+    requests_per_minute = 4
+    rate_limits = [(4, 60), (45, 3600), (120, 86400)]
+
+    # Court records are immutable once filed. Re-fetching one inside a working
+    # session is pure quota waste, and quota is the scarcest resource here.
+    CACHE_TTL = 7 * 24 * 3600
 
     BASE = "https://www.courtlistener.com/api/rest/v4"
 
@@ -46,7 +63,8 @@ class CourtListenerAdapter(BaseAdapter):
         headers = {"Accept": "application/json"}
         if self.api_key:
             headers["Authorization"] = f"Token {self.api_key}"
-        raw = self._http_get(url, headers=headers, timeout=30)
+        raw = self._http_get(url, headers=headers, timeout=30,
+                             cache_max_age=self.CACHE_TTL)
         return json.loads(raw), raw
 
     def _search(self, endpoint: str, **params) -> tuple[dict, bytes]:
@@ -58,7 +76,8 @@ class CourtListenerAdapter(BaseAdapter):
         headers = {"Accept": "application/json"}
         if self.api_key:
             headers["Authorization"] = f"Token {self.api_key}"
-        raw = self._http_get(url, headers=headers, timeout=30)
+        raw = self._http_get(url, headers=headers, timeout=30,
+                             cache_max_age=self.CACHE_TTL)
         return json.loads(raw), raw
 
     def pull_series(

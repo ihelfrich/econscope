@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 from typing import List, Optional
 
-from econscope.config import require_key
+from econscope.config import get_key
 from econscope.adapters.base import BaseAdapter, PullResult, SeriesMetadata
 
 # Common BLS series for quick reference
@@ -45,19 +45,21 @@ class BLSAdapter(BaseAdapter):
     BASE = "https://api.bls.gov/publicAPI/v2/timeseries/data/"
 
     def __init__(self):
-        self.api_key = require_key(self.key_env_var)
+        # The public v1-compatible signature needs no key. A registration key
+        # raises the daily/series/year limits and enables catalog metadata, but
+        # absence of one must not make published BLS observations inaccessible.
+        self.api_key = get_key(self.key_env_var)
 
     def _post(self, series_ids: List[str], start_year: int = None,
               end_year: int = None, catalog: bool = False) -> tuple[dict, bytes]:
-        payload = {
-            "seriesid": series_ids,
-            "registrationkey": self.api_key,
-        }
+        payload = {"seriesid": series_ids}
+        if self.api_key:
+            payload["registrationkey"] = self.api_key
         if start_year:
             payload["startyear"] = str(start_year)
         if end_year:
             payload["endyear"] = str(end_year)
-        if catalog:
+        if catalog and self.api_key:
             payload["catalog"] = True
 
         body = json.dumps(payload).encode()
@@ -223,10 +225,14 @@ class BLSAdapter(BaseAdapter):
 
     def _extract_metadata(self, series_id: str, series_data: dict) -> SeriesMetadata:
         catalog = series_data.get("catalog", {})
+        fallback_title = next(
+            (name for name, sid in COMMON_SERIES.items() if sid == series_id),
+            series_id,
+        )
         return SeriesMetadata(
             source=self.source_id,
             series_id=series_id,
-            title=catalog.get("series_title", ""),
+            title=catalog.get("series_title", fallback_title),
             frequency=catalog.get("frequency", ""),
             units=catalog.get("unit", ""),
             seasonal_adjustment=catalog.get("seasonally_adjusted", ""),
