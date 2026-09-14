@@ -51,6 +51,7 @@ ADAPTER_REGISTRY = {
     "patents": ("econscope.adapters.patents", "PatentsViewAdapter"),
     "courtlistener": ("econscope.adapters.courtlistener", "CourtListenerAdapter"),
     "gdelt": ("econscope.adapters.gdelt", "GDELTAdapter"),
+    "african_gold": ("econscope.adapters.african_gold", "AfricanGoldAdapter"),
 }
 
 _adapter_cache = {}

@@ -925,3 +925,24 @@ feeds:
 # 5. Run: econscope verify-keys
 # 6. Run: econscope catalog rebuild (to add it to the browsable catalog)
 # ============================================================================
+
+african_gold:
+  name: LBMA / African gold
+  provider: LBMA, Federal Reserve H.10, IMF IFS (via DBnomics), Yahoo Finance
+  url: https://prices.lbma.org.uk
+  api_base: https://prices.lbma.org.uk/json
+  key_required: false  # FRED key used for the H.10 legs, via the fred adapter
+  rate_limit:
+    requests_per_minute: 30
+  coverage: >
+    Daily LBMA gold AM/PM fix (USD, GBP, EUR) from 1968; the same benchmark converted
+    into 42 African currencies from 1996 (daily FX where it exists, IMF IFS monthly
+    backfill before that); JSE-listed gold instruments (NewGold ETF, AngloGold,
+    Harmony, Gold Fields, DRDGOLD) in rand.
+  frequency: [daily]
+  geography: [global, Africa, ZA]
+  formats: [json]
+  docs: https://www.lbma.org.uk/prices-and-data/precious-metal-prices
+  notes: >
+    Replaces FRED's withdrawn GOLDAMGBD228NLBM / GOLDPMGBD228NLBM. Processed panel in
+    data/processed/african_gold/; see its README.md for cleaning rules and caveats.

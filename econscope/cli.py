@@ -44,6 +44,7 @@ ADAPTERS = {
     "patents": ("econscope.adapters.patents", "PatentsViewAdapter"),
     "courtlistener": ("econscope.adapters.courtlistener", "CourtListenerAdapter"),
     "gdelt": ("econscope.adapters.gdelt", "GDELTAdapter"),
+    "african_gold": ("econscope.adapters.african_gold", "AfricanGoldAdapter"),
 }
 
 
@@ -358,6 +359,7 @@ def sources():
         "patents": ("PatentsView", "", "USPTO patents: grants, assignees, CPC classes (no key)"),
         "courtlistener": ("CourtListener", "COURTLISTENER_API_TOKEN", "Federal court opinions, dockets, judges, citations"),
         "gdelt": ("GDELT", "", "Global events, news volume, sentiment, geographic hotspots (no key)"),
+        "african_gold": ("LBMA / African gold", "", "Daily gold in 42 African currencies, 1996–; JSE gold equities (no key)"),
     }
 
     typer.echo(f"{'ID':<10} {'Name':<12} {'Key':>5} {'Coverage'}")
